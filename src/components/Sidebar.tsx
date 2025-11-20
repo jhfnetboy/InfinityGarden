@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { dbService, Character, Group } from '../services/database';
-import { Plus, Users, User, Settings } from 'lucide-react';
+import { Plus, Users, User, Settings, Maximize2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { SettingsDialog } from './SettingsDialog';
 import { CharacterDialog } from './CharacterDialog';
@@ -31,9 +31,18 @@ export function Sidebar({ onSelectChat, currentChat }: SidebarProps) {
   return (
     <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 bg-white">
-        <h2 className="font-bold text-gray-800 text-lg">XGarden</h2>
-        <p className="text-xs text-gray-500">Connected to: {dbService['currentWorldName']}</p>
+      <div className="p-4 border-b border-gray-200 bg-white flex justify-between items-center">
+        <div>
+          <h2 className="font-bold text-gray-800 text-lg">XGarden</h2>
+          <p className="text-xs text-gray-500">Connected to: {dbService['currentWorldName']}</p>
+        </div>
+        <button 
+          onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL("index.html") })}
+          className="text-gray-400 hover:text-gray-600 transition-colors"
+          title="Open in new tab"
+        >
+          <Maximize2 size={18} />
+        </button>
       </div>
 
       {/* Tabs */}

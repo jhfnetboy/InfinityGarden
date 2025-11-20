@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dbService } from '../services/database';
+import { Maximize2 } from 'lucide-react';
 
 export function WorldSelector() {
   const navigate = useNavigate();
@@ -29,7 +30,15 @@ export function WorldSelector() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-indigo-900 to-purple-900 text-white p-8">
+    <div className="relative flex flex-col items-center justify-center h-full bg-gradient-to-br from-indigo-900 to-purple-900 text-white p-8">
+      <button 
+        onClick={() => chrome.tabs.create({ url: chrome.runtime.getURL("index.html") })}
+        className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors"
+        title="Open in new tab"
+      >
+        <Maximize2 size={24} />
+      </button>
+
       <div className="mb-8 text-center">
         <img src="assets/icon.png" alt="Logo" className="w-24 h-24 mx-auto mb-4" />
         <h1 className="text-4xl font-bold mb-2">XGarden</h1>
