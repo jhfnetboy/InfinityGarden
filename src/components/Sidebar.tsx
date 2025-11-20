@@ -312,6 +312,19 @@ export function Sidebar({ onSelectChat, currentChat, onOpenSettings }: SidebarPr
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Config</h3>
           </div>
           <button 
+            onClick={() => {
+              const playerChar = characters.find(c => c.isPlayer);
+              setEditingChar(playerChar || { isPlayer: true } as Character);
+              setIsCharDialogOpen(true);
+            }}
+            className="w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-gray-200 text-gray-700 transition-colors mb-2"
+          >
+            <div className="w-8 h-8 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-700">
+              <User size={16} />
+            </div>
+            <span className="font-medium">Player Profile</span>
+          </button>
+          <button 
             onClick={onOpenSettings}
             className="w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-gray-200 text-gray-700 transition-colors"
           >

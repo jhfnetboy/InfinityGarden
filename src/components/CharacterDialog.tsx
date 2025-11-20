@@ -104,17 +104,20 @@ export function CharacterDialog({ isOpen, onClose, onSave, initialData }: Charac
             />
           </div>
 
-          <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2 cursor-pointer">
             <input
               type="checkbox"
-              id="isPlayer"
               checked={isPlayer}
               onChange={(e) => setIsPlayer(e.target.checked)}
-              className="rounded text-purple-600 focus:ring-purple-500"
+              className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
             />
-            <label htmlFor="isPlayer" className="text-sm text-gray-700">Is Player Character?</label>
-          </div>
-
+            <span className="text-sm text-gray-700">Is Player Character?</span>
+          </label>
+          {isPlayer && (
+            <p className="text-xs text-purple-600 mt-1">
+              This is your character. NPCs will use the name you set above to address you in conversations.
+            </p>
+          )}
           <button
             onClick={handleSave}
             disabled={!name || !persona}

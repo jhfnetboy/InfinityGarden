@@ -156,7 +156,7 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="flex h-full bg-white">
+    <div className="flex h-screen overflow-hidden bg-gray-100">
       <Sidebar 
         onSelectChat={(id, type) => setCurrentChat({ id, type })} 
         currentChat={currentChat}
