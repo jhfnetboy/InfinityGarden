@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { dbService } from '../services/database';
+import { globalConfigService } from '../services/globalConfig';
 import { X } from 'lucide-react';
 
 interface SettingsDialogProps {
@@ -8,7 +8,7 @@ interface SettingsDialogProps {
 }
 
 export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
-  const [provider, setProvider] = useState<'openai' | 'gemini'>('openai');
+  const [provider, setProvider] = useState<'openai' | 'gemini'>('gemini');
   const [apiKey, setApiKey] = useState('');
   const [apiUrl, setApiUrl] = useState('');
   const [model, setModel] = useState('');
@@ -20,15 +20,15 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
   }, [isOpen]);
 
   async function loadConfig() {
-    const config = await dbService.getConfig();
-    setProvider(config.provider || 'openai');
+    const config = await globalConfigService.getConfig();
+    setProvider(config.provider || 'gemini');
     setApiKey(config.apiKey || '');
     setApiUrl(config.apiUrl || (config.provider === 'gemini' ? '' : 'https://api.openai.com/v1'));
-    setModel(config.model || (config.provider === 'gemini' ? 'gemini-pro' : 'gpt-3.5-turbo'));
+    setModel(config.model || (config.provider === 'gemini' ? 'gemini-2.0-flash' : 'gpt-3.5-turbo'));
   }
 
   async function handleSave() {
-    await dbService.saveConfig({ provider, apiKey, apiUrl, model });
+    await globalConfigService.saveConfig({ provider, apiKey, apiUrl, model });
     onClose();
   }
 

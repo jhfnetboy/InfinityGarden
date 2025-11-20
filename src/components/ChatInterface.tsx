@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dbService, Message, Character } from '../services/database';
+import { globalConfigService } from '../services/globalConfig';
 import { aiService } from '../services/ai';
 import { Sidebar } from './Sidebar';
 import { SettingsDialog } from './SettingsDialog';
@@ -27,7 +28,7 @@ export function ChatInterface() {
 
   useEffect(() => {
     const checkConfig = async () => {
-      const config = await dbService.getConfig();
+      const config = await globalConfigService.getConfig();
       if (!config.apiKey) {
         setIsSettingsOpen(true);
       }
@@ -90,7 +91,7 @@ export function ChatInterface() {
 
       // Get context
       const worldbooks = await dbService.getAllWorldbooks();
-      const config = await dbService.getConfig();
+      const config = await globalConfigService.getConfig();
 
       if (!config.apiKey) {
         const errorMsg: Message = {
