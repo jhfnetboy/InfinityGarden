@@ -1,4 +1,4 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { openDB, DBSchema, IDBPDatabase, deleteDB } from 'idb';
 import { vectorDB } from './vector-db';
 
 export interface Character {
@@ -134,11 +134,20 @@ export class DatabaseService {
   }
 
   async getAvailableWorlds(): Promise<string[]> {
-    const databases = await window.indexedDB.databases();
-    return databases
-      .map(db => db.name)
-      .filter((name): name is string => !!name && name.startsWith(DB_PREFIX))
+    const dbs = await window.indexedDB.databases();
+    return dbs
+      .map(db => db.name!)
+      .filter(name => name && name.startsWith(DB_PREFIX))
       .map(name => name.replace(DB_PREFIX, ''));
+  }
+
+  async deleteWorld(name: string): Promise<void> {
+    const dbName = `${DB_PREFIX}${name}`;
+    // Close connection if it's the current one
+    if (this.currentWorldName === name) {
+      this.disconnect();
+    }
+    await deleteDB(dbName);
   }
 
   // Character Operations
@@ -252,8 +261,14 @@ export class DatabaseService {
   }
 
   // Export/Import
-  async exportWorld(): Promise<any> {
+  async exportWorld(worldName?: string): Promise<any> {
+    // If worldName is provided and different from current, or if not connected, connect first
+    if (worldName && worldName !== this.currentWorldName) {
+      await this.connect(worldName);
+    }
+    
     if (!this.db) throw new Error('Database not connected');
+    
     const characters = await this.getAllCharacters();
     const groups = await this.getAllGroups();
     const worldbooks = await this.getAllWorldbooks();
@@ -270,59 +285,78 @@ export class DatabaseService {
   }
 
   async importWorld(data: any, worldName: string): Promise<boolean> {
-    const success = await this.connect(worldName);
-    if (!success || !this.db) return false;
+    console.log('dbService.importWorld called for:', worldName);
+    try {
+      const success = await this.connect(worldName);
+      if (!success || !this.db) {
+        console.error('Failed to connect to DB for import');
+        return false;
+      }
 
-    const tx = this.db.transaction(['characters', 'groups', 'worldbooks', 'config'], 'readwrite');
-    
-    if (data.characters) {
-      for (const char of data.characters) {
-        // Remove ID to allow auto-increment
-        const { id, ...rest } = char;
-        await tx.objectStore('characters').put(rest);
-      }
-    }
-    
-    if (data.groups) {
-      for (const group of data.groups) {
-        const { id, ...rest } = group;
-        await tx.objectStore('groups').put(rest);
-      }
-    }
-    
-    if (data.worldbooks) {
-      for (const wb of data.worldbooks) {
-        const { id, ...rest } = wb;
-        await tx.objectStore('worldbooks').put(rest);
-      }
-    }
-    
-    if (data.config) {
-      if (data.config.apiKey) await tx.objectStore('config').put(data.config.apiKey, 'apiKey');
-      if (data.config.apiUrl) await tx.objectStore('config').put(data.config.apiUrl, 'apiUrl');
-      if (data.config.model) await tx.objectStore('config').put(data.config.model, 'model');
-      if (data.config.model) await tx.objectStore('config').put(data.config.model, 'model');
-    }
-
-    // Index Worldbooks into VectorDB
-    if (data.worldbooks) {
-      const vectorDocs = data.worldbooks.map((wb: any) => ({
-        text: `${wb.keywords}: ${wb.content}`,
-        vector: [], // TODO: Generate real embeddings. For now, we rely on keyword matching or need an embedding service.
-        metadata: {
-          type: 'worldbook',
-          worldName: worldName,
-          keywords: wb.keywords
-        }
-      }));
+      console.log('Starting transaction...');
+      const tx = this.db.transaction(['characters', 'groups', 'worldbooks', 'config'], 'readwrite');
       
-      // Note: Without an embedding service, we can't generate vectors client-side easily.
-      // For this demo, we will just store them. In a real app, we'd call an API here.
-      await vectorDB.batchInsert(vectorDocs);
-    }
+      if (data.characters) {
+        console.log('Importing characters:', data.characters.length);
+        for (const char of data.characters) {
+          // Remove ID to allow auto-increment
+          const { id, ...rest } = char;
+          await tx.objectStore('characters').put(rest);
+        }
+      }
+      
+      if (data.groups) {
+        console.log('Importing groups:', data.groups.length);
+        for (const group of data.groups) {
+          const { id, ...rest } = group;
+          await tx.objectStore('groups').put(rest);
+        }
+      }
+      
+      if (data.worldbooks) {
+        console.log('Importing worldbooks:', data.worldbooks.length);
+        for (const wb of data.worldbooks) {
+          const { id, ...rest } = wb;
+          await tx.objectStore('worldbooks').put(rest);
+        }
+      }
+      
+      if (data.config) {
+        console.log('Importing config');
+        if (data.config.apiKey) await tx.objectStore('config').put(data.config.apiKey, 'apiKey');
+        if (data.config.apiUrl) await tx.objectStore('config').put(data.config.apiUrl, 'apiUrl');
+        if (data.config.model) await tx.objectStore('config').put(data.config.model, 'model');
+      }
 
-    await tx.done;
-    return true;
+      await tx.done;
+      console.log('Transaction committed');
+
+      // Index Worldbooks into VectorDB
+      if (data.worldbooks) {
+        try {
+          console.log('Indexing worldbooks to VectorDB...');
+          const vectorDocs = data.worldbooks.map((wb: any) => ({
+            text: `${wb.keywords}: ${wb.content}`,
+            vector: [], // TODO: Generate real embeddings. For now, we rely on keyword matching or need an embedding service.
+            metadata: {
+              type: 'worldbook',
+              worldName: worldName,
+              keywords: wb.keywords
+            }
+          }));
+          
+          await vectorDB.batchInsert(vectorDocs);
+          console.log('VectorDB indexing complete');
+        } catch (vecError) {
+          console.error('VectorDB indexing failed (non-fatal):', vecError);
+        }
+      }
+
+      return true;
+    } catch (err) {
+      console.error('importWorld fatal error:', err);
+      return false;
+    }
   }
 }
 

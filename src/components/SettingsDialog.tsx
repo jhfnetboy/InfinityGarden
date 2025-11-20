@@ -94,13 +94,56 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
-            <input
-              type="text"
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500"
-              placeholder={provider === 'gemini' ? 'gemini-pro' : 'gpt-3.5-turbo'}
-            />
+            {provider === 'gemini' ? (
+              <select
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500"
+              >
+                <optgroup label="Gemini 2.5 (Preview)">
+                  <option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
+                  <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                  <option value="gemini-2.5-pro-preview-05-06">gemini-2.5-pro-preview-05-06</option>
+                  <option value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro-preview-06-05</option>
+                  <option value="gemini-2.5-pro">gemini-2.5-pro</option>
+                </optgroup>
+                <optgroup label="Gemini 2.0 (Flash & Pro)">
+                  <option value="gemini-2.0-flash-exp">gemini-2.0-flash-exp</option>
+                  <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+                  <option value="gemini-2.0-flash-001">gemini-2.0-flash-001</option>
+                  <option value="gemini-2.0-flash-lite-001">gemini-2.0-flash-lite-001</option>
+                  <option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
+                  <option value="gemini-2.0-pro-exp">gemini-2.0-pro-exp</option>
+                  <option value="gemini-2.0-pro-exp-02-05">gemini-2.0-pro-exp-02-05</option>
+                </optgroup>
+                <optgroup label="Gemini 1.5 & Others">
+                  <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+                  <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                  <option value="gemini-pro">gemini-pro</option>
+                </optgroup>
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500"
+                placeholder="gpt-3.5-turbo"
+              />
+            )}
+          </div>
+
+          <div className="text-xs text-gray-500 mt-2">
+            <p>Need an API Key?</p>
+            {provider === 'gemini' ? (
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:underline">
+                Get Gemini API Key
+              </a>
+            ) : (
+              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-purple-600 hover:underline">
+                Get OpenAI API Key
+              </a>
+            )}
           </div>
 
           <button

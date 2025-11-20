@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { dbService, Message, Character } from '../services/database';
 import { aiService } from '../services/ai';
 import { Sidebar } from './Sidebar';
+import { SettingsDialog } from './SettingsDialog';
 import ReactMarkdown from 'react-markdown';
 import { Send, ArrowLeft, MoreVertical } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -13,7 +14,9 @@ export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
   const [participants, setParticipants] = useState<Character[]>([]);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -21,6 +24,16 @@ export function ChatInterface() {
       loadChatSession();
     }
   }, [currentChat]);
+
+  useEffect(() => {
+    const checkConfig = async () => {
+      const config = await dbService.getConfig();
+      if (!config.apiKey) {
+        setIsSettingsOpen(true);
+      }
+    };
+    checkConfig();
+  }, []); // This useEffect runs once on mount for config check
 
   useEffect(() => {
     scrollToBottom();
@@ -146,6 +159,7 @@ export function ChatInterface() {
       <Sidebar 
         onSelectChat={(id, type) => setCurrentChat({ id, type })} 
         currentChat={currentChat}
+        onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
       <div className="flex-1 flex flex-col h-full">
@@ -252,6 +266,7 @@ export function ChatInterface() {
           </div>
         </div>
       </div>
+      <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 }

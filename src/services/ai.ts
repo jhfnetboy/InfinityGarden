@@ -26,7 +26,7 @@ export class AIService {
   private createChatModel(config: Config) {
     if (config.provider === 'gemini') {
       return new ChatGoogleGenerativeAI({
-        apiKey: config.apiKey,
+        apiKey: config.apiKey.trim(), // Ensure no hidden characters
         model: config.model || "gemini-pro",
         maxOutputTokens: 2048,
       });
@@ -34,7 +34,7 @@ export class AIService {
     
     // Default to OpenAI compatible
     return new ChatOpenAI({
-      openAIApiKey: config.apiKey,
+      openAIApiKey: config.apiKey.trim(), // Ensure no hidden characters
       modelName: config.model || "gpt-3.5-turbo",
       temperature: 0.7,
       configuration: {

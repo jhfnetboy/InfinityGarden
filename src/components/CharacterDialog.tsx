@@ -1,33 +1,60 @@
-import { useState } from 'react';
-import { dbService } from '../services/database';
+import { useState, useEffect } from 'react';
+import { dbService, Character } from '../services/database';
 import { X } from 'lucide-react';
+
+
 
 interface CharacterDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
+  initialData?: Character;
 }
 
-export function CharacterDialog({ isOpen, onClose, onSave }: CharacterDialogProps) {
+export function CharacterDialog({ isOpen, onClose, onSave, initialData }: CharacterDialogProps) {
   const [name, setName] = useState('');
   const [persona, setPersona] = useState('');
   const [greeting, setGreeting] = useState('');
+  const [avatar, setAvatar] = useState('');
+  const [isPublic, setIsPublic] = useState(false);
+  // The original code had isPlayer state, but the instruction's handleSave
+  // hardcodes isPlayer: false. I will keep the state for now but it won't be used
+  // in the handleSave as per the instruction.
   const [isPlayer, setIsPlayer] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && initialData) {
+      setName(initialData.name);
+      setPersona(initialData.persona);
+      setGreeting(initialData.greeting);
+      setAvatar(initialData.avatar || '');
+      setIsPublic(initialData.isPublic || false);
+      setIsPlayer(initialData.isPlayer || false); // Populate isPlayer if editing
+    } else if (isOpen) {
+      // Reset for new character
+      setName('');
+      setPersona('');
+      setGreeting('');
+      setAvatar('');
+      setIsPublic(false);
+      setIsPlayer(false); // Reset isPlayer for new character
+    }
+  }, [isOpen, initialData]);
 
   async function handleSave() {
     if (!name || !persona) return;
-    
-    await dbService.saveCharacter({
+
+    const char: Character = {
+      ...(initialData?.id ? { id: initialData.id } : {}),
       name,
       persona,
       greeting,
+      avatar,
+      isPublic,
       isPlayer
-    });
-    
-    setName('');
-    setPersona('');
-    setGreeting('');
-    setIsPlayer(false);
+    };
+
+    await dbService.saveCharacter(char);
     onSave();
     onClose();
   }

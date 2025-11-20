@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dbService } from '../services/database';
-import { Maximize2, Upload } from 'lucide-react';
+import { Maximize2, Upload, Download, Trash2 } from 'lucide-react';
 
 export function WorldSelector() {
   const navigate = useNavigate();
@@ -18,9 +18,19 @@ export function WorldSelector() {
   }
 
   async function handleEnterWorld(name: string) {
-    const success = await dbService.connect(name);
-    if (success) {
-      navigate('/chat');
+    console.log('Entering world:', name);
+    try {
+      const success = await dbService.connect(name);
+      console.log('Connection success:', success);
+      if (success) {
+        navigate('/chat');
+      } else {
+        console.error('Failed to connect to world');
+        alert('Failed to connect to world');
+      }
+    } catch (error) {
+      console.error('Error entering world:', error);
+      alert('Error entering world: ' + (error as Error).message);
     }
   }
 
@@ -33,27 +43,65 @@ export function WorldSelector() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    console.log('Starting import for file:', file.name);
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
+        console.log('File read successfully');
         const content = e.target?.result as string;
         const data = JSON.parse(content);
+        console.log('JSON parsed:', data);
         
         // Use filename as default world name if not present
         const worldName = data.worldName || file.name.replace('.json', '');
+        console.log('Importing into world:', worldName);
         
         const success = await dbService.importWorld(data, worldName);
+        console.log('Import result:', success);
+        
         if (success) {
           loadWorlds();
+          alert('World imported successfully!');
         } else {
           alert('Failed to import world');
         }
       } catch (error) {
         console.error('Import error:', error);
-        alert('Invalid world file');
+        alert('Invalid world file: ' + (error as Error).message);
       }
+      // Reset input
+      event.target.value = '';
+    };
+    reader.onerror = (e) => {
+      console.error('File reading error:', e);
+      alert('Error reading file');
+      event.target.value = '';
     };
     reader.readAsText(file);
+  };
+
+  const handleExport = async (worldName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const data = await dbService.exportWorld(worldName);
+    if (!data) return;
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${worldName}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleDelete = async (worldName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm(`Are you sure you want to delete world "${worldName}"? This cannot be undone.`)) {
+      await dbService.deleteWorld(worldName);
+      loadWorlds();
+    }
   };
 
   return (
@@ -81,7 +129,23 @@ export function WorldSelector() {
               className="w-full p-4 bg-white/80 backdrop-blur-sm hover:bg-white text-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all font-medium text-left flex justify-between items-center group"
             >
               <span>{world}</span>
-              <span className="opacity-0 group-hover:opacity-100 text-purple-500">→</span>
+              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={(e) => handleExport(world, e)}
+                  className="p-1 text-gray-400 hover:text-purple-600 transition-colors"
+                  title="Export World"
+                >
+                  <Download size={16} />
+                </button>
+                <button
+                  onClick={(e) => handleDelete(world, e)}
+                  className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                  title="Delete World"
+                >
+                  <Trash2 size={16} />
+                </button>
+                <span className="text-purple-500">→</span>
+              </div>
             </button>
           ))}
         </div>

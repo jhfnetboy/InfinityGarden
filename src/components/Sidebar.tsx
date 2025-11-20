@@ -1,21 +1,23 @@
 import { useState, useEffect } from 'react';
 import { dbService, Character, Group } from '../services/database';
-import { Plus, Users, User, Settings, Maximize2 } from 'lucide-react';
+import { Plus, Users, User, Settings, Maximize2, Edit2, Trash2 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { SettingsDialog } from './SettingsDialog';
+// import { SettingsDialog } from './SettingsDialog'; // Keep import if needed or remove
 import { CharacterDialog } from './CharacterDialog';
 
 interface SidebarProps {
   onSelectChat: (id: number, type: 'private' | 'group') => void;
   currentChat: { id: number | null; type: 'private' | 'group' | '' };
+  onOpenSettings: () => void;
 }
 
-export function Sidebar({ onSelectChat, currentChat }: SidebarProps) {
+export function Sidebar({ onSelectChat, currentChat, onOpenSettings }: SidebarProps) {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [activeTab, setActiveTab] = useState<'chats' | 'contacts'>('chats');
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  // const [isSettingsOpen, setIsSettingsOpen] = useState(false); // Moved to parent
   const [isCharDialogOpen, setIsCharDialogOpen] = useState(false);
+  const [editingChar, setEditingChar] = useState<Character | undefined>(undefined);
 
   useEffect(() => {
     loadData();
@@ -101,13 +103,13 @@ export function Sidebar({ onSelectChat, currentChat }: SidebarProps) {
               key={char.id}
               onClick={() => onSelectChat(char.id!, 'private')}
               className={cn(
-                "w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors",
+                "w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors group relative",
                 currentChat.type === 'private' && currentChat.id === char.id
                   ? "bg-purple-100 text-purple-900"
                   : "hover:bg-gray-200 text-gray-700"
               )}
             >
-              <div className="w-8 h-8 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-700 overflow-hidden">
+              <div className="w-8 h-8 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-700 overflow-hidden flex-shrink-0">
                 {char.avatar ? (
                   <img src={char.avatar} alt={char.name} className="w-full h-full object-cover" />
                 ) : (
@@ -118,6 +120,34 @@ export function Sidebar({ onSelectChat, currentChat }: SidebarProps) {
                 <p className="font-medium truncate">{char.name}</p>
                 <p className="text-xs text-gray-500 truncate">{char.persona.slice(0, 30)}...</p>
               </div>
+              
+              {/* Actions */}
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur-sm rounded-md p-1 shadow-sm">
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingChar(char);
+                    setIsCharDialogOpen(true);
+                  }}
+                  className="p-1 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded cursor-pointer"
+                  title="Edit"
+                >
+                  <Edit2 size={14} />
+                </div>
+                <div 
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Delete ${char.name}?`)) {
+                      await dbService.deleteCharacter(char.id!);
+                      loadData();
+                    }
+                  }}
+                  className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded cursor-pointer"
+                  title="Delete"
+                >
+                  <Trash2 size={14} />
+                </div>
+              </div>
             </button>
           ))}
         </div>
@@ -126,14 +156,17 @@ export function Sidebar({ onSelectChat, currentChat }: SidebarProps) {
       {/* Footer Actions */}
       <div className="p-4 border-t border-gray-200 bg-white flex justify-between">
         <button 
-          onClick={() => setIsSettingsOpen(true)}
+          onClick={onOpenSettings}
           className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg" 
           title="Settings"
         >
           <Settings size={20} />
         </button>
         <button 
-          onClick={() => setIsCharDialogOpen(true)}
+          onClick={() => {
+            setEditingChar(undefined);
+            setIsCharDialogOpen(true);
+          }}
           className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg flex items-center gap-2" 
           title="Add Character"
         >
@@ -142,11 +175,12 @@ export function Sidebar({ onSelectChat, currentChat }: SidebarProps) {
         </button>
       </div>
 
-      <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      {/* <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} /> */ }
       <CharacterDialog 
         isOpen={isCharDialogOpen} 
         onClose={() => setIsCharDialogOpen(false)} 
         onSave={loadData}
+        initialData={editingChar}
       />
     </div>
   );
