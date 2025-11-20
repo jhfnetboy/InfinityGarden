@@ -80,6 +80,21 @@ export class DatabaseService {
   private db: IDBPDatabase<XGardenDB> | null = null;
   private currentWorldName: string = '';
 
+  private async ensureConnection(): Promise<void> {
+    if (this.db) return;
+    
+    // Try to recover connection from localStorage
+    const lastWorld = localStorage.getItem('lastWorld');
+    if (lastWorld) {
+      console.log('Restoring connection to world:', lastWorld);
+      await this.connect(lastWorld);
+    }
+    
+    if (!this.db) {
+      throw new Error('Database not connected');
+    }
+  }
+
   async connect(worldName: string): Promise<boolean> {
     try {
       this.db = await openDB<XGardenDB>(`${DB_PREFIX}${worldName}`, 1, {
@@ -118,6 +133,7 @@ export class DatabaseService {
         },
       });
       this.currentWorldName = worldName;
+      localStorage.setItem('lastWorld', worldName);
       return true;
     } catch (error) {
       console.error('Failed to connect to database:', error);
@@ -130,6 +146,7 @@ export class DatabaseService {
       this.db.close();
       this.db = null;
       this.currentWorldName = '';
+      localStorage.removeItem('lastWorld');
     }
   }
 
@@ -152,29 +169,29 @@ export class DatabaseService {
 
   // Character Operations
   async getAllCharacters(): Promise<Character[]> {
-    if (!this.db) throw new Error('Database not connected');
-    return this.db.getAll('characters');
+    await this.ensureConnection();
+    return this.db!.getAll('characters');
   }
 
   async saveCharacter(character: Character): Promise<number> {
-    if (!this.db) throw new Error('Database not connected');
+    await this.ensureConnection();
     
     // If setting as player, unset others
     if (character.isPlayer) {
       const allChars = await this.getAllCharacters();
       for (const char of allChars) {
         if (char.isPlayer && char.id !== character.id) {
-          await this.db.put('characters', { ...char, isPlayer: false });
+          await this.db!.put('characters', { ...char, isPlayer: false });
         }
       }
     }
     
-    return this.db.put('characters', character);
+    return this.db!.put('characters', character);
   }
 
   async deleteCharacter(id: number): Promise<void> {
-    if (!this.db) throw new Error('Database not connected');
-    await this.db.delete('characters', id);
+    await this.ensureConnection();
+    await this.db!.delete('characters', id);
     
     // Also remove from groups
     const groups = await this.getAllGroups();
@@ -188,50 +205,50 @@ export class DatabaseService {
 
   // Group Operations
   async getAllGroups(): Promise<Group[]> {
-    if (!this.db) throw new Error('Database not connected');
-    return this.db.getAll('groups');
+    await this.ensureConnection();
+    return this.db!.getAll('groups');
   }
 
   async saveGroup(group: Group): Promise<number> {
-    if (!this.db) throw new Error('Database not connected');
-    return this.db.put('groups', group);
+    await this.ensureConnection();
+    return this.db!.put('groups', group);
   }
 
   async deleteGroup(id: number): Promise<void> {
-    if (!this.db) throw new Error('Database not connected');
-    await this.db.delete('groups', id);
+    await this.ensureConnection();
+    await this.db!.delete('groups', id);
   }
 
   // Worldbook Operations
   async getAllWorldbooks(): Promise<Worldbook[]> {
-    if (!this.db) throw new Error('Database not connected');
-    return this.db.getAll('worldbooks');
+    await this.ensureConnection();
+    return this.db!.getAll('worldbooks');
   }
 
   async saveWorldbook(worldbook: Worldbook): Promise<number> {
-    if (!this.db) throw new Error('Database not connected');
-    return this.db.put('worldbooks', worldbook);
+    await this.ensureConnection();
+    return this.db!.put('worldbooks', worldbook);
   }
 
   async deleteWorldbook(id: number): Promise<void> {
-    if (!this.db) throw new Error('Database not connected');
-    await this.db.delete('worldbooks', id);
+    await this.ensureConnection();
+    await this.db!.delete('worldbooks', id);
   }
 
   // Message Operations
   async getChatHistory(sessionId: string): Promise<Message[]> {
-    if (!this.db) throw new Error('Database not connected');
-    return this.db.getAllFromIndex('messages', 'by-session', sessionId);
+    await this.ensureConnection();
+    return this.db!.getAllFromIndex('messages', 'by-session', sessionId);
   }
 
   async saveMessage(message: Message): Promise<number> {
-    if (!this.db) throw new Error('Database not connected');
-    return this.db.put('messages', message);
+    await this.ensureConnection();
+    return this.db!.put('messages', message);
   }
 
   async deleteChatHistory(sessionId: string): Promise<void> {
-    if (!this.db) throw new Error('Database not connected');
-    const tx = this.db.transaction('messages', 'readwrite');
+    await this.ensureConnection();
+    const tx = this.db!.transaction('messages', 'readwrite');
     const index = tx.store.index('by-session');
     let cursor = await index.openCursor(sessionId);
     
@@ -244,20 +261,20 @@ export class DatabaseService {
 
   // Config Operations
   async getConfig(): Promise<Partial<Config>> {
-    if (!this.db) throw new Error('Database not connected');
-    const provider = await this.db.get('config', 'provider');
-    const apiKey = await this.db.get('config', 'apiKey');
-    const apiUrl = await this.db.get('config', 'apiUrl');
-    const model = await this.db.get('config', 'model');
+    await this.ensureConnection();
+    const provider = await this.db!.get('config', 'provider');
+    const apiKey = await this.db!.get('config', 'apiKey');
+    const apiUrl = await this.db!.get('config', 'apiUrl');
+    const model = await this.db!.get('config', 'model');
     return { provider, apiKey, apiUrl, model };
   }
 
   async saveConfig(config: Partial<Config>): Promise<void> {
-    if (!this.db) throw new Error('Database not connected');
-    if (config.provider !== undefined) await this.db.put('config', config.provider, 'provider');
-    if (config.apiKey !== undefined) await this.db.put('config', config.apiKey, 'apiKey');
-    if (config.apiUrl !== undefined) await this.db.put('config', config.apiUrl, 'apiUrl');
-    if (config.model !== undefined) await this.db.put('config', config.model, 'model');
+    await this.ensureConnection();
+    if (config.provider !== undefined) await this.db!.put('config', config.provider, 'provider');
+    if (config.apiKey !== undefined) await this.db!.put('config', config.apiKey, 'apiKey');
+    if (config.apiUrl !== undefined) await this.db!.put('config', config.apiUrl, 'apiUrl');
+    if (config.model !== undefined) await this.db!.put('config', config.model, 'model');
   }
 
   // Export/Import
@@ -265,9 +282,9 @@ export class DatabaseService {
     // If worldName is provided and different from current, or if not connected, connect first
     if (worldName && worldName !== this.currentWorldName) {
       await this.connect(worldName);
+    } else {
+      await this.ensureConnection();
     }
-    
-    if (!this.db) throw new Error('Database not connected');
     
     const characters = await this.getAllCharacters();
     const groups = await this.getAllGroups();

@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { dbService, Character, Group } from '../services/database';
-import { Plus, Users, User, Settings, Maximize2, Edit2, Trash2 } from 'lucide-react';
+import { dbService, Character, Group, Worldbook } from '../services/database';
+import { Plus, Users, User, Settings, Maximize2, Edit2, Trash2, Book } from 'lucide-react';
 import { cn } from '../lib/utils';
-// import { SettingsDialog } from './SettingsDialog'; // Keep import if needed or remove
 import { CharacterDialog } from './CharacterDialog';
+import { WorldbookDialog } from './WorldbookDialog';
+import { GroupDialog } from './GroupDialog';
 
 interface SidebarProps {
   onSelectChat: (id: number, type: 'private' | 'group') => void;
@@ -14,10 +15,16 @@ interface SidebarProps {
 export function Sidebar({ onSelectChat, currentChat, onOpenSettings }: SidebarProps) {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
-  const [activeTab, setActiveTab] = useState<'chats' | 'contacts'>('chats');
-  // const [isSettingsOpen, setIsSettingsOpen] = useState(false); // Moved to parent
+  const [worldbooks, setWorldbooks] = useState<Worldbook[]>([]);
+  
   const [isCharDialogOpen, setIsCharDialogOpen] = useState(false);
   const [editingChar, setEditingChar] = useState<Character | undefined>(undefined);
+  
+  const [isGroupDialogOpen, setIsGroupDialogOpen] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<Group | undefined>(undefined);
+  
+  const [isWorldbookDialogOpen, setIsWorldbookDialogOpen] = useState(false);
+  const [editingWorldbook, setEditingWorldbook] = useState<Worldbook | undefined>(undefined);
 
   useEffect(() => {
     loadData();
@@ -26,8 +33,10 @@ export function Sidebar({ onSelectChat, currentChat, onOpenSettings }: SidebarPr
   async function loadData() {
     const chars = await dbService.getAllCharacters();
     const grps = await dbService.getAllGroups();
+    const wbs = await dbService.getAllWorldbooks();
     setCharacters(chars);
     setGroups(grps);
+    setWorldbooks(wbs);
   }
 
   return (
@@ -47,57 +56,87 @@ export function Sidebar({ onSelectChat, currentChat, onOpenSettings }: SidebarPr
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-gray-200 bg-white">
-        <button
-          onClick={() => setActiveTab('chats')}
-          className={cn(
-            "flex-1 py-2 text-sm font-medium transition-colors",
-            activeTab === 'chats' ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500 hover:text-gray-700"
-          )}
-        >
-          Chats
-        </button>
-        <button
-          onClick={() => setActiveTab('contacts')}
-          className={cn(
-            "flex-1 py-2 text-sm font-medium transition-colors",
-            activeTab === 'contacts' ? "text-purple-600 border-b-2 border-purple-600" : "text-gray-500 hover:text-gray-700"
-          )}
-        >
-          Contacts
-        </button>
-      </div>
-
       {/* List */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+      <div className="flex-1 overflow-y-auto p-2 space-y-4">
         {/* Groups */}
-        {groups.length > 0 && (
-          <div className="mb-4">
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">Groups</h3>
-            {groups.map(group => (
-              <button
-                key={group.id}
-                onClick={() => onSelectChat(group.id!, 'group')}
-                className={cn(
-                  "w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors",
-                  currentChat.type === 'group' && currentChat.id === group.id
-                    ? "bg-purple-100 text-purple-900"
-                    : "hover:bg-gray-200 text-gray-700"
-                )}
-              >
-                <div className="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center text-purple-700">
-                  <Users size={16} />
-                </div>
-                <span className="font-medium truncate">{group.name}</span>
-              </button>
-            ))}
+        <div>
+          <div className="flex justify-between items-center px-2 mb-2">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Groups</h3>
+            <button 
+              onClick={() => {
+                setEditingGroup(undefined);
+                setIsGroupDialogOpen(true);
+              }}
+              className="text-gray-400 hover:text-purple-600"
+              title="Add Group"
+            >
+              <Plus size={14} />
+            </button>
           </div>
-        )}
+          {groups.map(group => (
+            <button
+              key={group.id}
+              onClick={() => onSelectChat(group.id!, 'group')}
+              className={cn(
+                "w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors group relative",
+                currentChat.type === 'group' && currentChat.id === group.id
+                  ? "bg-purple-100 text-purple-900"
+                  : "hover:bg-gray-200 text-gray-700"
+              )}
+            >
+              <div className="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center text-purple-700 flex-shrink-0">
+                <Users size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="font-medium truncate">{group.name}</span>
+              </div>
+              
+              {/* Actions */}
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur-sm rounded-md p-1 shadow-sm">
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingGroup(group);
+                    setIsGroupDialogOpen(true);
+                  }}
+                  className="p-1 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded cursor-pointer"
+                  title="Edit"
+                >
+                  <Edit2 size={14} />
+                </div>
+                <div 
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Delete group "${group.name}"?`)) {
+                      await dbService.deleteGroup(group.id!);
+                      loadData();
+                    }
+                  }}
+                  className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded cursor-pointer"
+                  title="Delete"
+                >
+                  <Trash2 size={14} />
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
 
         {/* Characters */}
         <div>
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">Characters</h3>
+          <div className="flex justify-between items-center px-2 mb-2">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Characters</h3>
+            <button 
+              onClick={() => {
+                setEditingChar(undefined);
+                setIsCharDialogOpen(true);
+              }}
+              className="text-gray-400 hover:text-purple-600"
+              title="Add Character"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
           {characters.filter(c => !c.isPlayer).map(char => (
             <button
               key={char.id}
@@ -151,36 +190,100 @@ export function Sidebar({ onSelectChat, currentChat, onOpenSettings }: SidebarPr
             </button>
           ))}
         </div>
+
+        {/* Worldbook */}
+        <div>
+          <div className="flex justify-between items-center px-2 mb-2">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Worldbook</h3>
+            <button 
+              onClick={() => {
+                setEditingWorldbook(undefined);
+                setIsWorldbookDialogOpen(true);
+              }}
+              className="text-gray-400 hover:text-purple-600"
+              title="Add Entry"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
+          {worldbooks.map(wb => (
+            <div
+              key={wb.id}
+              className="w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-gray-200 text-gray-700 transition-colors group relative"
+            >
+              <div className="w-8 h-8 rounded-full bg-emerald-200 flex items-center justify-center text-emerald-700 flex-shrink-0">
+                <Book size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{wb.keywords}</p>
+                <p className="text-xs text-gray-500 truncate">{wb.content}</p>
+              </div>
+
+              {/* Actions */}
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur-sm rounded-md p-1 shadow-sm">
+                <div 
+                  onClick={() => {
+                    setEditingWorldbook(wb);
+                    setIsWorldbookDialogOpen(true);
+                  }}
+                  className="p-1 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded cursor-pointer"
+                  title="Edit"
+                >
+                  <Edit2 size={14} />
+                </div>
+                <div 
+                  onClick={async () => {
+                    if (confirm(`Delete entry "${wb.keywords}"?`)) {
+                      await dbService.deleteWorldbook(wb.id!);
+                      loadData();
+                    }
+                  }}
+                  className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded cursor-pointer"
+                  title="Delete"
+                >
+                  <Trash2 size={14} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Config */}
+        <div>
+          <div className="flex justify-between items-center px-2 mb-2">
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Config</h3>
+          </div>
+          <button 
+            onClick={onOpenSettings}
+            className="w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-gray-200 text-gray-700 transition-colors"
+          >
+            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700">
+              <Settings size={16} />
+            </div>
+            <span className="font-medium">World Settings</span>
+          </button>
+        </div>
       </div>
 
-      {/* Footer Actions */}
-      <div className="p-4 border-t border-gray-200 bg-white flex justify-between">
-        <button 
-          onClick={onOpenSettings}
-          className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg" 
-          title="Settings"
-        >
-          <Settings size={20} />
-        </button>
-        <button 
-          onClick={() => {
-            setEditingChar(undefined);
-            setIsCharDialogOpen(true);
-          }}
-          className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg flex items-center gap-2" 
-          title="Add Character"
-        >
-          <Plus size={20} />
-          <span className="text-sm font-medium">New</span>
-        </button>
-      </div>
-
-      {/* <SettingsDialog isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} /> */ }
       <CharacterDialog 
         isOpen={isCharDialogOpen} 
         onClose={() => setIsCharDialogOpen(false)} 
         onSave={loadData}
         initialData={editingChar}
+      />
+      
+      <GroupDialog
+        isOpen={isGroupDialogOpen}
+        onClose={() => setIsGroupDialogOpen(false)}
+        onSave={loadData}
+        initialData={editingGroup}
+      />
+      
+      <WorldbookDialog
+        isOpen={isWorldbookDialogOpen}
+        onClose={() => setIsWorldbookDialogOpen(false)}
+        onSave={loadData}
+        initialData={editingWorldbook}
       />
     </div>
   );

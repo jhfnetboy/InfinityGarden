@@ -162,7 +162,7 @@ export function ChatInterface() {
         onOpenSettings={() => setIsSettingsOpen(true)}
       />
 
-      <div className="flex-1 flex flex-col h-full">
+      <div className="flex-1 flex flex-col h-full min-h-0">
         {/* Chat Header */}
         <div className="h-14 border-b border-gray-200 flex items-center px-4 justify-between bg-white">
           <div className="flex items-center gap-3">
@@ -240,8 +240,8 @@ export function ChatInterface() {
         </div>
 
         {/* Input Area */}
-        <div className="p-4 bg-white border-t border-gray-200">
-          <div className="flex gap-2 items-end bg-gray-50 p-2 rounded-xl border border-gray-200 focus-within:border-purple-400 focus-within:ring-1 focus-within:ring-purple-400 transition-all">
+        <div className="p-6 bg-white border-t border-gray-200">
+          <div className="flex gap-2 items-end bg-gray-50 p-3 rounded-2xl border border-gray-200 focus-within:border-purple-400 focus-within:ring-1 focus-within:ring-purple-400 transition-all shadow-sm">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -252,16 +252,16 @@ export function ChatInterface() {
                 }
               }}
               placeholder="Type a message..."
-              className="flex-1 bg-transparent border-none focus:ring-0 resize-none max-h-32 min-h-[24px] py-1 px-2 text-gray-800"
-              rows={1}
+              className="flex-1 bg-transparent border-none focus:ring-0 resize-none max-h-48 min-h-[72px] py-2 px-3 text-gray-800 text-base"
+              rows={3}
               disabled={!currentChat.id || isLoading}
             />
             <button
               onClick={handleSendMessage}
               disabled={!input.trim() || !currentChat.id || isLoading}
-              className="p-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="p-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mb-1"
             >
-              <Send size={18} />
+              <Send size={20} />
             </button>
           </div>
         </div>
