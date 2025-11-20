@@ -277,6 +277,17 @@ export class DatabaseService {
     if (config.model !== undefined) await this.db!.put('config', config.model, 'model');
   }
 
+  async getWorldDescription(): Promise<string> {
+    await this.ensureConnection();
+    const description = await this.db!.get('config', 'worldDescription');
+    return description || '';
+  }
+
+  async saveWorldDescription(description: string): Promise<void> {
+    await this.ensureConnection();
+    await this.db!.put('config', description, 'worldDescription');
+  }
+
   // Export/Import
   async exportWorld(worldName?: string): Promise<any> {
     // If worldName is provided and different from current, or if not connected, connect first

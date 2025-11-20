@@ -49,7 +49,8 @@ export class AIService {
     worldbooks: Worldbook[],
     playerCharacter: Character | null,
     targetCharacterName: string | null,
-    isGroup: boolean
+    isGroup: boolean,
+    worldDescription?: string
   ): Promise<string> {
     // Get conversation text for keyword matching
     const recentHistory = history.slice(-15);
@@ -85,8 +86,14 @@ export class AIService {
     let prompt = `
   == 系统提示 ==
   - 这是一个角色扮演对话
-  == 这个场景中的人物 ==
   `;
+    
+    // Add world description if available
+    if (worldDescription) {
+      prompt += `\n== 世界设定 ==\n${worldDescription}\n\n`;
+    }
+    
+    prompt += `== 这个场景中的人物 ==\n`;
     participants.forEach((p) => {
       prompt += `Name: ${p.name}\nPersona: ${p.persona}\n\n`;
     });
@@ -133,7 +140,20 @@ export class AIService {
           roleplayInstruction = `${aiControlRules} The User speaks directly to ${targetCharacterName}. ${targetCharacterName} MUST respond. Format: '${targetCharacterName}: Their dialogue'.`;
         }
       } else {
-        roleplayInstruction = `${aiControlRules} You are the roleplay master, responsible for driving the story forward. Based on the characters and world setting, you MUST decide who speaks next OR provide narration. Narration is crucial for describing the environment, introducing new events, or revealing challenges. For example, 'A cold wind blows through the trees, carrying the scent of decay.' Use narration to make the story dynamic and interesting. For character dialogue, use the format 'CharacterName: Their dialogue'. For narration, omit the prefix.`;
+        // Group chat: encourage multiple character responses
+        const characterNames = participants.map(p => p.name).join(', ');
+        roleplayInstruction = `${aiControlRules} This is a group conversation with multiple characters: ${characterNames}. 
+        
+IMPORTANT: Multiple characters should respond to create a dynamic group discussion. Each character should have their own perspective based on their persona.
+
+Format your response with multiple characters speaking:
+CharacterName1: Their dialogue
+CharacterName2: Their dialogue
+CharacterName3: Their dialogue
+
+You may also include narration (without a character name prefix) to describe the scene or atmosphere.
+
+Make the conversation feel natural - characters can agree, disagree, ask questions, or build on each other's points.`;
       }
     } else {
       // Single character chat

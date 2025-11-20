@@ -95,4 +95,4 @@ export class VectorDB {
   }
 }
 
-export const vectorDB = new VectorDB({ dbName: 'XGarden_VectorDB' });
+export const vectorDB = new VectorDB({ dbName: 'VectorDB_XGarden' });

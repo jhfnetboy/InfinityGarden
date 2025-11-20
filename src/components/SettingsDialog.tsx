@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { globalConfigService } from '../services/globalConfig';
+import { dbService } from '../services/database';
 import { X } from 'lucide-react';
 
 interface SettingsDialogProps {
@@ -12,6 +13,7 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
   const [apiKey, setApiKey] = useState('');
   const [apiUrl, setApiUrl] = useState('');
   const [model, setModel] = useState('');
+  const [worldDescription, setWorldDescription] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -25,10 +27,15 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
     setApiKey(config.apiKey || '');
     setApiUrl(config.apiUrl || (config.provider === 'gemini' ? '' : 'https://api.openai.com/v1'));
     setModel(config.model || (config.provider === 'gemini' ? 'gemini-2.0-flash' : 'gpt-3.5-turbo'));
+    
+    // Load world description
+    const desc = await dbService.getWorldDescription();
+    setWorldDescription(desc);
   }
 
   async function handleSave() {
     await globalConfigService.saveConfig({ provider, apiKey, apiUrl, model });
+    await dbService.saveWorldDescription(worldDescription);
     onClose();
   }
 
@@ -131,6 +138,19 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
                 placeholder="gpt-3.5-turbo"
               />
             )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">World Description</label>
+            <textarea
+              value={worldDescription}
+              onChange={(e) => setWorldDescription(e.target.value)}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-purple-500 h-24 resize-none"
+              placeholder="Describe the world setting, background, or theme..."
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              This description helps AI understand the world context for better roleplay.
+            </p>
           </div>
 
           <div className="text-xs text-gray-500 mt-2">

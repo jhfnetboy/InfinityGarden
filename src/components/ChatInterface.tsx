@@ -92,6 +92,7 @@ export function ChatInterface() {
       // Get context
       const worldbooks = await dbService.getAllWorldbooks();
       const config = await globalConfigService.getConfig();
+      const worldDescription = await dbService.getWorldDescription();
 
       if (!config.apiKey) {
         const errorMsg: Message = {
@@ -113,7 +114,8 @@ export function ChatInterface() {
         worldbooks,
         playerChar || null,
         participants.length === 1 ? participants[0].name : null,
-        currentChat.type === 'group'
+        currentChat.type === 'group',
+        worldDescription
       );
 
       const responseText = await aiService.getAIResponse(prompt, config as any);
