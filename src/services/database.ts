@@ -1,0 +1,310 @@
+import { openDB, DBSchema, IDBPDatabase } from 'idb';
+
+export interface Character {
+  id?: number;
+  name: string;
+  persona: string;
+  greeting: string;
+  description?: string;
+  avatar?: string;
+  isPlayer?: boolean;
+  isPublic?: boolean;
+  allowEdit?: boolean;
+}
+
+export interface Group {
+  id?: number;
+  name: string;
+  characterIds: number[];
+}
+
+export interface Worldbook {
+  id?: number;
+  keywords: string;
+  content: string;
+}
+
+export interface Message {
+  id?: number;
+  role: 'user' | 'char';
+  content: string;
+  timestamp: number;
+  characterId?: number | null;
+  characterName?: string | null;
+  sessionId: string;
+  isSent?: boolean;
+  isRead?: boolean;
+  isThinking?: boolean;
+}
+
+export interface Config {
+  provider?: 'openai' | 'gemini';
+  apiKey: string;
+  apiUrl: string;
+  model: string;
+}
+
+interface XGardenDB extends DBSchema {
+  characters: {
+    key: number;
+    value: Character;
+    indexes: { 'by-name': string };
+  };
+  groups: {
+    key: number;
+    value: Group;
+  };
+  worldbooks: {
+    key: number;
+    value: Worldbook;
+  };
+  messages: {
+    key: number;
+    value: Message;
+    indexes: { 'by-session': string };
+  };
+  config: {
+    key: string;
+    value: any;
+  };
+  plugin_configs: {
+    key: string;
+    value: any;
+  };
+}
+
+const DB_PREFIX = 'XGarden_';
+
+export class DatabaseService {
+  private db: IDBPDatabase<XGardenDB> | null = null;
+  private currentWorldName: string = '';
+
+  async connect(worldName: string): Promise<boolean> {
+    try {
+      this.db = await openDB<XGardenDB>(`${DB_PREFIX}${worldName}`, 1, {
+        upgrade(db) {
+          // Characters store
+          if (!db.objectStoreNames.contains('characters')) {
+            const charStore = db.createObjectStore('characters', { keyPath: 'id', autoIncrement: true });
+            charStore.createIndex('by-name', 'name');
+          }
+
+          // Groups store
+          if (!db.objectStoreNames.contains('groups')) {
+            db.createObjectStore('groups', { keyPath: 'id', autoIncrement: true });
+          }
+
+          // Worldbooks store
+          if (!db.objectStoreNames.contains('worldbooks')) {
+            db.createObjectStore('worldbooks', { keyPath: 'id', autoIncrement: true });
+          }
+
+          // Messages store
+          if (!db.objectStoreNames.contains('messages')) {
+            const msgStore = db.createObjectStore('messages', { keyPath: 'id', autoIncrement: true });
+            msgStore.createIndex('by-session', 'sessionId');
+          }
+
+          // Config store
+          if (!db.objectStoreNames.contains('config')) {
+            db.createObjectStore('config');
+          }
+          
+          // Plugin configs store
+          if (!db.objectStoreNames.contains('plugin_configs')) {
+            db.createObjectStore('plugin_configs');
+          }
+        },
+      });
+      this.currentWorldName = worldName;
+      return true;
+    } catch (error) {
+      console.error('Failed to connect to database:', error);
+      return false;
+    }
+  }
+
+  disconnect() {
+    if (this.db) {
+      this.db.close();
+      this.db = null;
+      this.currentWorldName = '';
+    }
+  }
+
+  async getAvailableWorlds(): Promise<string[]> {
+    const databases = await window.indexedDB.databases();
+    return databases
+      .map(db => db.name)
+      .filter((name): name is string => !!name && name.startsWith(DB_PREFIX))
+      .map(name => name.replace(DB_PREFIX, ''));
+  }
+
+  // Character Operations
+  async getAllCharacters(): Promise<Character[]> {
+    if (!this.db) throw new Error('Database not connected');
+    return this.db.getAll('characters');
+  }
+
+  async saveCharacter(character: Character): Promise<number> {
+    if (!this.db) throw new Error('Database not connected');
+    
+    // If setting as player, unset others
+    if (character.isPlayer) {
+      const allChars = await this.getAllCharacters();
+      for (const char of allChars) {
+        if (char.isPlayer && char.id !== character.id) {
+          await this.db.put('characters', { ...char, isPlayer: false });
+        }
+      }
+    }
+    
+    return this.db.put('characters', character);
+  }
+
+  async deleteCharacter(id: number): Promise<void> {
+    if (!this.db) throw new Error('Database not connected');
+    await this.db.delete('characters', id);
+    
+    // Also remove from groups
+    const groups = await this.getAllGroups();
+    for (const group of groups) {
+      if (group.characterIds.includes(id)) {
+        group.characterIds = group.characterIds.filter(cid => cid !== id);
+        await this.saveGroup(group);
+      }
+    }
+  }
+
+  // Group Operations
+  async getAllGroups(): Promise<Group[]> {
+    if (!this.db) throw new Error('Database not connected');
+    return this.db.getAll('groups');
+  }
+
+  async saveGroup(group: Group): Promise<number> {
+    if (!this.db) throw new Error('Database not connected');
+    return this.db.put('groups', group);
+  }
+
+  async deleteGroup(id: number): Promise<void> {
+    if (!this.db) throw new Error('Database not connected');
+    await this.db.delete('groups', id);
+  }
+
+  // Worldbook Operations
+  async getAllWorldbooks(): Promise<Worldbook[]> {
+    if (!this.db) throw new Error('Database not connected');
+    return this.db.getAll('worldbooks');
+  }
+
+  async saveWorldbook(worldbook: Worldbook): Promise<number> {
+    if (!this.db) throw new Error('Database not connected');
+    return this.db.put('worldbooks', worldbook);
+  }
+
+  async deleteWorldbook(id: number): Promise<void> {
+    if (!this.db) throw new Error('Database not connected');
+    await this.db.delete('worldbooks', id);
+  }
+
+  // Message Operations
+  async getChatHistory(sessionId: string): Promise<Message[]> {
+    if (!this.db) throw new Error('Database not connected');
+    return this.db.getAllFromIndex('messages', 'by-session', sessionId);
+  }
+
+  async saveMessage(message: Message): Promise<number> {
+    if (!this.db) throw new Error('Database not connected');
+    return this.db.put('messages', message);
+  }
+
+  async deleteChatHistory(sessionId: string): Promise<void> {
+    if (!this.db) throw new Error('Database not connected');
+    const tx = this.db.transaction('messages', 'readwrite');
+    const index = tx.store.index('by-session');
+    let cursor = await index.openCursor(sessionId);
+    
+    while (cursor) {
+      await cursor.delete();
+      cursor = await cursor.continue();
+    }
+    await tx.done;
+  }
+
+  // Config Operations
+  async getConfig(): Promise<Partial<Config>> {
+    if (!this.db) throw new Error('Database not connected');
+    const provider = await this.db.get('config', 'provider');
+    const apiKey = await this.db.get('config', 'apiKey');
+    const apiUrl = await this.db.get('config', 'apiUrl');
+    const model = await this.db.get('config', 'model');
+    return { provider, apiKey, apiUrl, model };
+  }
+
+  async saveConfig(config: Partial<Config>): Promise<void> {
+    if (!this.db) throw new Error('Database not connected');
+    if (config.provider !== undefined) await this.db.put('config', config.provider, 'provider');
+    if (config.apiKey !== undefined) await this.db.put('config', config.apiKey, 'apiKey');
+    if (config.apiUrl !== undefined) await this.db.put('config', config.apiUrl, 'apiUrl');
+    if (config.model !== undefined) await this.db.put('config', config.model, 'model');
+  }
+
+  // Export/Import
+  async exportWorld(): Promise<any> {
+    if (!this.db) throw new Error('Database not connected');
+    const characters = await this.getAllCharacters();
+    const groups = await this.getAllGroups();
+    const worldbooks = await this.getAllWorldbooks();
+    const config = await this.getConfig();
+    
+    return {
+      worldName: this.currentWorldName,
+      version: 1,
+      characters,
+      groups,
+      worldbooks,
+      config
+    };
+  }
+
+  async importWorld(data: any, worldName: string): Promise<boolean> {
+    const success = await this.connect(worldName);
+    if (!success || !this.db) return false;
+
+    const tx = this.db.transaction(['characters', 'groups', 'worldbooks', 'config'], 'readwrite');
+    
+    if (data.characters) {
+      for (const char of data.characters) {
+        // Remove ID to allow auto-increment
+        const { id, ...rest } = char;
+        await tx.objectStore('characters').put(rest);
+      }
+    }
+    
+    if (data.groups) {
+      for (const group of data.groups) {
+        const { id, ...rest } = group;
+        await tx.objectStore('groups').put(rest);
+      }
+    }
+    
+    if (data.worldbooks) {
+      for (const wb of data.worldbooks) {
+        const { id, ...rest } = wb;
+        await tx.objectStore('worldbooks').put(rest);
+      }
+    }
+    
+    if (data.config) {
+      if (data.config.apiKey) await tx.objectStore('config').put(data.config.apiKey, 'apiKey');
+      if (data.config.apiUrl) await tx.objectStore('config').put(data.config.apiUrl, 'apiUrl');
+      if (data.config.model) await tx.objectStore('config').put(data.config.model, 'model');
+    }
+
+    await tx.done;
+    return true;
+  }
+}
+
+export const dbService = new DatabaseService();

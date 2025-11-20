@@ -1,7 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "Chrome extension BoilerPlate",
+  "name": "XGarden",
   "version": "1.0.0",
+  "icons": {
+    "16": "assets/icon.png",
+    "48": "assets/icon.png",
+    "128": "assets/icon.png"
+  },
   "action": { "default_popup": "index.html" },
   "background": {
     "service_worker": "./src/background/background.ts"
