@@ -1,4 +1,5 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { vectorDB } from './vector-db';
 
 export interface Character {
   id?: number;
@@ -300,6 +301,24 @@ export class DatabaseService {
       if (data.config.apiKey) await tx.objectStore('config').put(data.config.apiKey, 'apiKey');
       if (data.config.apiUrl) await tx.objectStore('config').put(data.config.apiUrl, 'apiUrl');
       if (data.config.model) await tx.objectStore('config').put(data.config.model, 'model');
+      if (data.config.model) await tx.objectStore('config').put(data.config.model, 'model');
+    }
+
+    // Index Worldbooks into VectorDB
+    if (data.worldbooks) {
+      const vectorDocs = data.worldbooks.map((wb: any) => ({
+        text: `${wb.keywords}: ${wb.content}`,
+        vector: [], // TODO: Generate real embeddings. For now, we rely on keyword matching or need an embedding service.
+        metadata: {
+          type: 'worldbook',
+          worldName: worldName,
+          keywords: wb.keywords
+        }
+      }));
+      
+      // Note: Without an embedding service, we can't generate vectors client-side easily.
+      // For this demo, we will just store them. In a real app, we'd call an API here.
+      await vectorDB.batchInsert(vectorDocs);
     }
 
     await tx.done;
