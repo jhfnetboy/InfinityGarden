@@ -43,6 +43,8 @@
 
 ## Screenshot Checklist
 
+> **Note**: All screenshots have been generated and are stored in `docs/screenshots/`.
+
 ### Screenshot 1: World Selector ✅
 **Filename**: `01-world-selector.png`
 

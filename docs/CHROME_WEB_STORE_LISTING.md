@@ -114,6 +114,26 @@ XGarden integrates with the following third-party services, which you must confi
    - Privacy Policy: https://www.volcengine.com/docs/6348/68918
    - You control: Your own API key and usage
 
+## Privacy Policy
+
+> **Note**: You can host the full policy on a GitHub Pages site or similar, or paste this text if the store allows.
+
+**Privacy Policy Summary:**
+XGarden does not collect, use, or sell any user data. All chat history, world settings, and API keys are stored locally on your device. We connect directly to third-party AI APIs (like Google Gemini) using keys you provide; your data is sent directly to them and never passes through our servers.
+
+**Single Purpose Description:**
+The single purpose of XGarden is to provide an immersive, AI-powered roleplay chat interface that runs entirely in the browser sidebar. It allows users to create and interact with virtual characters and worlds using their own AI API keys, with all data remaining local to the user's machine.
+
+## Data Usage (Privacy Practices Tab)
+
+When filling out the "Privacy practices" tab in the Developer Dashboard:
+
+1.  **Do you collect any user data?** -> **No**
+2.  **Certifications**: Check the boxes to certify that:
+    -   You do not sell user data.
+    -   You do not use data for purposes unrelated to the item's core functionality.
+    -   You do not use data for lending or credit scoring.
+
 DATA COLLECTION
 We do not collect any personal information, analytics, or usage data. The extension operates entirely locally on your device.
 
