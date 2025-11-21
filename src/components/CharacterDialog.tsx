@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { dbService, Character } from '../services/database';
-import { X, Upload } from 'lucide-react';
+import { X, Upload, Trash2 } from 'lucide-react';
 
 
 
@@ -18,6 +18,7 @@ export function CharacterDialog({ isOpen, onClose, onSave, initialData, onGenera
   const [persona, setPersona] = useState('');
   const [greeting, setGreeting] = useState('');
   const [avatar, setAvatar] = useState('');
+  const [portrait, setPortrait] = useState('');
   const [isPublic, setIsPublic] = useState(false);
   // The original code had isPlayer state, but the instruction's handleSave
   // hardcodes isPlayer: false. I will keep the state for now but it won't be used
@@ -30,6 +31,7 @@ export function CharacterDialog({ isOpen, onClose, onSave, initialData, onGenera
       setPersona(initialData.persona);
       setGreeting(initialData.greeting);
       setAvatar(initialData.avatar || '');
+      setPortrait(initialData.portrait || '');
       setIsPublic(initialData.isPublic || false);
       setIsPlayer(initialData.isPlayer || false); // Populate isPlayer if editing
     } else if (isOpen) {
@@ -38,6 +40,7 @@ export function CharacterDialog({ isOpen, onClose, onSave, initialData, onGenera
       setPersona('');
       setGreeting('');
       setAvatar('');
+      setPortrait('');
       setIsPublic(false);
       setIsPlayer(false); // Reset isPlayer for new character
     }
@@ -52,6 +55,7 @@ export function CharacterDialog({ isOpen, onClose, onSave, initialData, onGenera
       persona,
       greeting,
       avatar,
+      portrait,
       isPublic,
       isPlayer
     };
@@ -119,6 +123,14 @@ export function CharacterDialog({ isOpen, onClose, onSave, initialData, onGenera
                     alt="Avatar preview"
                     className="w-24 h-24 rounded-lg object-cover border border-gray-300"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setAvatar('')}
+                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                    title="Delete avatar"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               )}
               <label className="flex items-center justify-center gap-2 cursor-pointer px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition-colors">
@@ -159,26 +171,42 @@ export function CharacterDialog({ isOpen, onClose, onSave, initialData, onGenera
           )}
           
           {/* Action Buttons */}
-          <div className="flex gap-2">
-            {onGeneratePortrait && initialData && (
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              {onGeneratePortrait && initialData && (
+                <button
+                  onClick={onGeneratePortrait}
+                  type="button"
+                  className="flex-1 bg-purple-100 text-purple-700 py-2 rounded-lg hover:bg-purple-200 font-medium flex items-center justify-center gap-2 transition-colors"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                  Generate Portrait
+                </button>
+              )}
               <button
-                onClick={onGeneratePortrait}
-                type="button"
-                className="flex-1 bg-purple-100 text-purple-700 py-2 rounded-lg hover:bg-purple-200 font-medium flex items-center justify-center gap-2 transition-colors"
+                onClick={handleSave}
+                disabled={!name || !persona}
+                className={`${
+                  onGeneratePortrait && initialData ? 'flex-1' : 'w-full'
+                } bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-medium disabled:opacity-50`}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
-                Generate Portrait
+                {initialData ? 'Save Character' : 'Create Character'}
+              </button>
+            </div>
+            {portrait && initialData && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm('Delete portrait?')) {
+                    setPortrait('');
+                  }
+                }}
+                className="w-full bg-red-100 text-red-700 py-2 rounded-lg hover:bg-red-200 font-medium flex items-center justify-center gap-2 transition-colors"
+              >
+                <Trash2 size={16} />
+                Delete Portrait
               </button>
             )}
-            <button
-              onClick={handleSave}
-              disabled={!name || !persona}
-              className={`${
-                onGeneratePortrait && initialData ? 'flex-1' : 'w-full'
-              } bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-medium disabled:opacity-50`}
-            >
-              {initialData ? 'Save Character' : 'Create Character'}
-            </button>
           </div>
         </div>
       </div>

@@ -377,7 +377,7 @@ export function ChatInterface() {
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col relative z-10">
         {/* Header */}
-        <div className="h-16 bg-white/80 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 shadow-sm">
+        <div className="h-16 bg-white/30 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 shadow-sm">
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -492,7 +492,7 @@ export function ChatInterface() {
         </div>
 
         {/* Input Area */}
-        <div className="p-4 bg-white/70 backdrop-blur-md">
+        <div className="p-4 bg-white/30 backdrop-blur-md">
           <div className="flex gap-2 max-w-4xl mx-auto">
             <input
               type="text"

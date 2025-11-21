@@ -8,6 +8,7 @@ export interface Character {
   greeting: string;
   description?: string;
   avatar?: string;
+  portrait?: string;
   isPlayer?: boolean;
   isPublic?: boolean;
   allowEdit?: boolean;
