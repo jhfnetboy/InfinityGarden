@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { dbService, Character, Group, Worldbook } from '../services/database';
-import { Plus, Users, User, Maximize2, Edit2, Trash2, Book, ChevronDown } from 'lucide-react';
+import { Plus, Users, User, Maximize2, Edit2, Trash2, Book, ChevronDown, Settings } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { CharacterDialog } from './CharacterDialog';
 import { WorldbookDialog } from './WorldbookDialog';
 import { GroupDialog } from './GroupDialog';
+import { SettingsDialog } from './SettingsDialog';
 
 interface SidebarProps {
   onSelectChat: (id: number, type: 'private' | 'group') => void;
@@ -29,6 +30,8 @@ export function Sidebar({ onSelectChat, currentChat, onGeneratePortrait }: Sideb
   
   const [isWorldbookDialogOpen, setIsWorldbookDialogOpen] = useState(false);
   const [editingWorldbook, setEditingWorldbook] = useState<Worldbook | undefined>(undefined);
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -315,6 +318,15 @@ export function Sidebar({ onSelectChat, currentChat, onGeneratePortrait }: Sideb
           <div className="flex justify-between items-center px-2 mb-2">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Config</h3>
           </div>
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-gray-200 text-gray-700 transition-colors"
+          >
+            <div className="w-8 h-8 rounded-full bg-blue-200 flex items-center justify-center text-blue-700 flex-shrink-0">
+              <Settings size={16} />
+            </div>
+            <span className="font-medium">AI Settings</span>
+          </button>
         </div>
       </div>
 
@@ -341,6 +353,11 @@ export function Sidebar({ onSelectChat, currentChat, onGeneratePortrait }: Sideb
         onClose={() => setIsWorldbookDialogOpen(false)}
         onSave={loadData}
         initialData={editingWorldbook}
+      />
+
+      <SettingsDialog
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
       />
     </div>
   );

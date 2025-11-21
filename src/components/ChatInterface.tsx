@@ -294,9 +294,9 @@ export function ChatInterface() {
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden relative">
       {/* Background Image Layer */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-1000"
-        style={{ 
+      <div
+        className="absolute inset-0 bg-contain bg-center bg-no-repeat transition-all duration-1000"
+        style={{
             backgroundImage: `url("${bgImage}")`,
         }}
       />
@@ -353,11 +353,18 @@ export function ChatInterface() {
               <h1 className="font-bold text-gray-800">
                 {activeCharacter?.name || activeGroup?.name || 'Select a Character'}
               </h1>
-              {activeChapter && (
-                <span className="text-xs text-purple-600 font-medium px-2 py-0.5 bg-purple-50 rounded-full border border-purple-100">
-                  {activeChapter.title}
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {activeGroup && (
+                  <span className="text-xs text-gray-600">
+                    {characters.filter(c => activeGroup.characterIds.includes(c.id!)).map(c => c.name).join(', ')}
+                  </span>
+                )}
+                {activeChapter && (
+                  <span className="text-xs text-purple-600 font-medium px-2 py-0.5 bg-purple-50 rounded-full border border-purple-100">
+                    {activeChapter.title}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -421,7 +428,7 @@ export function ChatInterface() {
         </div>
 
         {/* Input Area */}
-        <div className="p-4 bg-white/80 backdrop-blur-sm border-t border-gray-200">
+        <div className="p-4 bg-white/70 backdrop-blur-md">
           <div className="flex gap-2 max-w-4xl mx-auto">
             <input
               type="text"

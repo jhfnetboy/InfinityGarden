@@ -424,6 +424,14 @@ export class DatabaseService {
     const config = await this.getConfig();
     const worldDefaults = await this.getWorldDefaults();
 
+    // Remove sensitive data from config
+    const safeConfig = {
+      provider: config.provider,
+      apiUrl: config.apiUrl,
+      model: config.model,
+      // apiKey is intentionally excluded for security
+    };
+
     return {
       worldName: this.currentWorldName,
       version: 2,
@@ -431,7 +439,7 @@ export class DatabaseService {
       groups,
       worldbooks,
       chapters,
-      config,
+      config: safeConfig,
       worldDefaults
     };
   }
