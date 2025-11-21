@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dbService } from '../services/database';
 import { i18nService, Language } from '../services/i18n';
-import { Maximize2, Upload, Download, Trash2, Sparkles } from 'lucide-react';
+import { Maximize2, Upload, Download, Trash2, Sparkles, ChevronDown } from 'lucide-react';
 
 export function WorldSelector() {
   const navigate = useNavigate();
   const [worlds, setWorlds] = useState<string[]>([]);
   const [newWorldName, setNewWorldName] = useState('');
   const [language, setLanguage] = useState<Language>(i18nService.getLanguage());
+  const [renamingWorld, setRenamingWorld] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
 
   const t = (key: string) => i18nService.t(key);
 
@@ -113,6 +115,29 @@ export function WorldSelector() {
     }
   };
 
+  const handleRename = async (oldName: string) => {
+    if (!renameValue.trim() || renameValue === oldName) {
+      setRenamingWorld(null);
+      setRenameValue('');
+      return;
+    }
+
+    try {
+      // Export old world data
+      const data = await dbService.exportWorld(oldName);
+      // Delete old world
+      await dbService.deleteWorld(oldName);
+      // Import with new name
+      await dbService.importWorld(data, renameValue);
+      loadWorlds();
+      setRenamingWorld(null);
+      setRenameValue('');
+    } catch (error) {
+      console.error('Failed to rename world:', error);
+      alert('Failed to rename world');
+    }
+  };
+
   const handleLoadExample = async () => {
     try {
       const response = await fetch(chrome.runtime.getURL('CypherPink.json'));
@@ -167,33 +192,78 @@ export function WorldSelector() {
       </div>
 
       <div className="w-full max-w-xs space-y-4">
-        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2">
-          {worlds.map(world => (
-            <button
-              key={world}
-              onClick={() => handleEnterWorld(world)}
-              className="w-full p-4 bg-white/80 backdrop-blur-sm hover:bg-white text-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all font-medium text-left flex justify-between items-center group"
-            >
-              <span>{world}</span>
-              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={(e) => handleExport(world, e)}
-                  className="p-1 text-gray-400 hover:text-purple-600 transition-colors"
-                  title={t('worldSelector.exportWorld')}
-                >
-                  <Download size={16} />
-                </button>
-                <button
-                  onClick={(e) => handleDelete(world, e)}
-                  className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                  title={t('worldSelector.deleteWorld')}
-                >
-                  <Trash2 size={16} />
-                </button>
-                <span className="text-purple-500">→</span>
+        <div className="relative">
+          <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2">
+            {worlds.map(world => (
+              <div key={world}>
+                {renamingWorld === world ? (
+                  <div className="flex gap-2 p-2">
+                    <input
+                      type="text"
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleRename(world);
+                        if (e.key === 'Escape') {
+                          setRenamingWorld(null);
+                          setRenameValue('');
+                        }
+                      }}
+                      autoFocus
+                      className="flex-1 border border-purple-300 rounded-lg px-2 py-1 text-sm focus:outline-none focus:border-purple-500"
+                      placeholder="New name..."
+                    />
+                    <button
+                      onClick={() => handleRename(world)}
+                      className="px-2 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700"
+                    >
+                      Save
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleEnterWorld(world)}
+                    className="w-full p-4 bg-white/80 backdrop-blur-sm hover:bg-white text-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all font-medium text-left flex justify-between items-center group"
+                  >
+                    <span>{world}</span>
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRenamingWorld(world);
+                          setRenameValue(world);
+                        }}
+                        className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
+                        title="Rename World"
+                      >
+                        ✎
+                      </button>
+                      <button
+                        onClick={(e) => handleExport(world, e)}
+                        className="p-1 text-gray-400 hover:text-purple-600 transition-colors"
+                        title={t('worldSelector.exportWorld')}
+                      >
+                        <Download size={16} />
+                      </button>
+                      <button
+                        onClick={(e) => handleDelete(world, e)}
+                        className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                        title={t('worldSelector.deleteWorld')}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                      <span className="text-purple-500">→</span>
+                    </div>
+                  </button>
+                )}
               </div>
-            </button>
-          ))}
+            ))}
+          </div>
+          {worlds.length > 3 && (
+            <div className="absolute bottom-0 left-0 right-0 flex justify-center pt-2 bg-gradient-to-t from-sky-200 to-transparent pointer-events-none">
+              <ChevronDown size={18} className="text-gray-600 animate-bounce" />
+            </div>
+          )}
         </div>
 
         <div className="pt-4 border-t border-gray-400/30">

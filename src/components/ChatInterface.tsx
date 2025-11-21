@@ -319,10 +319,22 @@ export function ChatInterface() {
 
       {/* Tachie (Character Portrait) Layer */}
       {tachieUrl && (
-        <div className="absolute bottom-0 right-10 z-0 pointer-events-none transition-all duration-500 animate-in fade-in slide-in-from-bottom-10">
-          <img 
-            src={tachieUrl} 
-            alt="Character Portrait" 
+        <div className="absolute bottom-0 right-10 z-0 pointer-events-auto transition-all duration-500 animate-in fade-in slide-in-from-bottom-10 group/portrait">
+          <button
+            onClick={() => {
+              const link = document.createElement('a');
+              link.href = tachieUrl;
+              link.download = `${activeCharacter?.name || 'portrait'}.png`;
+              link.click();
+            }}
+            className="absolute top-2 right-2 opacity-0 group-hover/portrait:opacity-100 transition-opacity bg-black/50 hover:bg-black/70 text-white px-2 py-1 rounded text-xs"
+            title="Download portrait"
+          >
+            Download
+          </button>
+          <img
+            src={tachieUrl}
+            alt="Character Portrait"
             className="max-h-[80vh] w-auto object-contain drop-shadow-2xl"
           />
         </div>
@@ -480,7 +492,7 @@ export function ChatInterface() {
               onKeyDown={(e) => e.key === 'Enter' && handleSend()}
               placeholder={activeCharacter ? `Message ${activeCharacter.name}...` : activeGroup ? `Message ${activeGroup.name}...` : "Select a character to start chatting"}
               disabled={(!activeCharacter && !activeGroupId) || isLoading}
-              className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 disabled:bg-gray-50 disabled:text-gray-400"
+              className="flex-1 border border-gray-300 rounded-full px-4 py-3 text-base focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 disabled:bg-gray-50 disabled:text-gray-400"
             />
             <button
               onClick={handleSend}
