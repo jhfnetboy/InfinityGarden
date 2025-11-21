@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { dbService } from '../services/database';
-import { Maximize2, Upload, Download, Trash2 } from 'lucide-react';
+import { Maximize2, Upload, Download, Trash2, Sparkles } from 'lucide-react';
 
 export function WorldSelector() {
   const navigate = useNavigate();
@@ -104,6 +104,26 @@ export function WorldSelector() {
     }
   };
 
+  const handleLoadExample = async () => {
+    try {
+      const response = await fetch(chrome.runtime.getURL('CypherPink.json'));
+      const data = await response.json();
+
+      const worldName = data.worldName || 'CypherPink';
+      const success = await dbService.importWorld(data, worldName);
+
+      if (success) {
+        loadWorlds();
+        alert('CypherPink example world loaded successfully!');
+      } else {
+        alert('Failed to load example world');
+      }
+    } catch (error) {
+      console.error('Error loading example:', error);
+      alert('Error loading example: ' + (error as Error).message);
+    }
+  };
+
   return (
     <div className="relative flex flex-col items-center justify-center h-full bg-gradient-to-br from-sky-200 to-blue-300 text-gray-800 p-8">
       <button 
@@ -171,8 +191,8 @@ export function WorldSelector() {
             </button>
           </div>
           
-          <div className="mt-4 flex justify-center">
-            <label className="flex items-center gap-2 text-gray-700 hover:text-gray-900 cursor-pointer px-4 py-2 rounded-lg hover:bg-white/50 transition-colors">
+          <div className="mt-4 flex flex-col gap-2">
+            <label className="flex items-center justify-center gap-2 text-gray-700 hover:text-gray-900 cursor-pointer px-4 py-2 rounded-lg hover:bg-white/50 transition-colors">
               <Upload size={18} />
               <span className="text-sm font-medium">Import World JSON</span>
               <input
@@ -182,6 +202,13 @@ export function WorldSelector() {
                 className="hidden"
               />
             </label>
+            <button
+              onClick={handleLoadExample}
+              className="flex items-center justify-center gap-2 text-purple-700 hover:text-purple-900 cursor-pointer px-4 py-2 rounded-lg hover:bg-purple-100/50 transition-colors"
+            >
+              <Sparkles size={18} />
+              <span className="text-sm font-medium">Load Example: CypherPink</span>
+            </button>
           </div>
         </div>
       </div>

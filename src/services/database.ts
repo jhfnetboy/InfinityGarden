@@ -416,19 +416,23 @@ export class DatabaseService {
     } else {
       await this.ensureConnection();
     }
-    
+
     const characters = await this.getAllCharacters();
     const groups = await this.getAllGroups();
     const worldbooks = await this.getAllWorldbooks();
+    const chapters = await this.getAllChapters();
     const config = await this.getConfig();
-    
+    const worldDefaults = await this.getWorldDefaults();
+
     return {
       worldName: this.currentWorldName,
-      version: 1,
+      version: 2,
       characters,
       groups,
       worldbooks,
-      config
+      chapters,
+      config,
+      worldDefaults
     };
   }
 
@@ -442,8 +446,8 @@ export class DatabaseService {
       }
 
       console.log('Starting transaction...');
-      const tx = this.db.transaction(['characters', 'groups', 'worldbooks', 'config'], 'readwrite');
-      
+      const tx = this.db.transaction(['characters', 'groups', 'worldbooks', 'chapters', 'config'], 'readwrite');
+
       if (data.characters) {
         console.log('Importing characters:', data.characters.length);
         for (const char of data.characters) {
@@ -452,7 +456,7 @@ export class DatabaseService {
           await tx.objectStore('characters').put(rest);
         }
       }
-      
+
       if (data.groups) {
         console.log('Importing groups:', data.groups.length);
         for (const group of data.groups) {
@@ -460,7 +464,7 @@ export class DatabaseService {
           await tx.objectStore('groups').put(rest);
         }
       }
-      
+
       if (data.worldbooks) {
         console.log('Importing worldbooks:', data.worldbooks.length);
         for (const wb of data.worldbooks) {
@@ -468,12 +472,34 @@ export class DatabaseService {
           await tx.objectStore('worldbooks').put(rest);
         }
       }
-      
+
+      if (data.chapters) {
+        console.log('Importing chapters:', data.chapters.length);
+        for (const chapter of data.chapters) {
+          const { id, ...rest } = chapter;
+          await tx.objectStore('chapters').put(rest);
+        }
+      }
+
       if (data.config) {
         console.log('Importing config');
         if (data.config.apiKey) await tx.objectStore('config').put(data.config.apiKey, 'apiKey');
         if (data.config.apiUrl) await tx.objectStore('config').put(data.config.apiUrl, 'apiUrl');
         if (data.config.model) await tx.objectStore('config').put(data.config.model, 'model');
+        if (data.config.provider) await tx.objectStore('config').put(data.config.provider, 'provider');
+      }
+
+      if (data.worldDefaults) {
+        console.log('Importing world defaults');
+        if (data.worldDefaults.worldDescription !== undefined) {
+          await tx.objectStore('config').put(data.worldDefaults.worldDescription, 'worldDescription');
+        }
+        if (data.worldDefaults.backgroundImage !== undefined) {
+          await tx.objectStore('config').put(data.worldDefaults.backgroundImage, 'worldDefaultBackground');
+        }
+        if (data.worldDefaults.backgroundMusic !== undefined) {
+          await tx.objectStore('config').put(data.worldDefaults.backgroundMusic, 'worldDefaultMusic');
+        }
       }
 
       await tx.done;
