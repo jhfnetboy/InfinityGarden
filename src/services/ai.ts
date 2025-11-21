@@ -202,12 +202,14 @@ Make the conversation feel natural - characters can agree, disagree, ask questio
     messages,
     userMessage,
     character,
-    worldContext
+    worldContext,
+    language = 'en'
   }: {
     messages: Message[];
     userMessage: string;
     character: Character;
     worldContext?: string;
+    language?: 'en' | 'zh' | 'th';
   }): Promise<string> {
     // Get config
     const { globalConfigService } = await import('./globalConfig');
@@ -231,7 +233,7 @@ Make the conversation feel natural - characters can agree, disagree, ask questio
       characterId: null
     };
 
-    const prompt = await this.constructPrompt(
+    let prompt = await this.constructPrompt(
       [character], // participants
       [...messages, tempUserMsg], // history
       [], // worldbooks - we might want to fetch these if needed, but for now empty or passed via worldContext
@@ -240,6 +242,17 @@ Make the conversation feel natural - characters can agree, disagree, ask questio
       false, // isGroup
       worldContext // worldDescription
     );
+
+    // Add language instruction
+    const languageInstructions: Record<'en' | 'zh' | 'th', string> = {
+      en: '',
+      zh: '\n重要：所有回复必须使用中文。Please respond entirely in Chinese.',
+      th: '\n重要：所有回复必须使用泰文。Please respond entirely in Thai.'
+    };
+
+    if (language !== 'en') {
+      prompt += languageInstructions[language];
+    }
 
     return this.getAIResponse(prompt, config);
   }

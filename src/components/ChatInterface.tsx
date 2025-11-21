@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Send, Menu, MoreVertical, Volume2, VolumeX, LogOut, Settings } from 'lucide-react';
 import { aiService } from '../services/ai';
 import { dbService as databaseService, Message, Character, Chapter, Group, WorldDefaults } from '../services/database';
+import { i18nService, Language } from '../services/i18n';
 import ReactMarkdown from 'react-markdown';
 import { CharacterGenerator } from './CharacterGenerator';
 import { WorldbookPanel } from './WorldbookPanel';
@@ -22,7 +23,17 @@ export function ChatInterface() {
   const [activeChapter, setActiveChapter] = useState<Chapter | null>(null);
   const [worldDefaults, setWorldDefaults] = useState<WorldDefaults>({});
   const [isMusicPlaying, setIsMusicPlaying] = useState(true);
-  
+  const [currentLanguage, setCurrentLanguage] = useState<Language>(i18nService.getLanguage());
+
+  // Monitor language changes
+  useEffect(() => {
+    const checkLanguage = setInterval(() => {
+      const newLang = i18nService.getLanguage();
+      setCurrentLanguage(newLang);
+    }, 500);
+    return () => clearInterval(checkLanguage);
+  }, []);
+
   // Dialog States
   const [isWorldbookOpen, setIsWorldbookOpen] = useState(false);
   const [isWorldConfigOpen, setIsWorldConfigOpen] = useState(false);
@@ -193,7 +204,8 @@ export function ChatInterface() {
           messages: contextMessages,
           userMessage: input,
           character: activeChar,
-          worldContext: activeChapter?.description || ''
+          worldContext: activeChapter?.description || '',
+          language: currentLanguage
         });
       } else {
         // Group chat logic
@@ -212,7 +224,8 @@ export function ChatInterface() {
           messages: contextMessages,
           userMessage: input,
           character: activeChar,
-          worldContext: activeChapter?.description || ''
+          worldContext: activeChapter?.description || '',
+          language: currentLanguage
         });
       }
 
@@ -436,7 +449,7 @@ export function ChatInterface() {
                     <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
                     <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                   </div>
-                  <span className="text-sm text-gray-500">正在思考...</span>
+                  <span className="text-sm text-gray-500">Thinking...</span>
                 </div>
               </div>
             </div>
