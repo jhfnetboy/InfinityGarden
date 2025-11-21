@@ -6,7 +6,7 @@
 
 An open-source Chrome extension for AI-driven character interactions, world-building, and immersive storytelling.
 
-[![Version](https://img.shields.io/badge/version-0.1.3-blue.svg)](https://github.com/jhfnetboy/InfinityGarden/releases)
+[![Version](https://img.shields.io/badge/version-0.1.4-blue.svg)](https://github.com/jhfnetboy/InfinityGarden/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 [English](README.md) | [中文](README_CN.md)
@@ -21,9 +21,11 @@ An open-source Chrome extension for AI-driven character interactions, world-buil
 
 ### 🎭 Character & World Management
 - **Create Custom Characters**: Design unique NPCs with personalities, greetings, and avatars
+- **Character Avatars**: Upload custom avatars or generate via AI
 - **Player Character**: Set your own character with custom personality traits
 - **Group Conversations**: Organize characters into groups for multi-character interactions
 - **World Building**: Define world settings, backgrounds, and lore with keyword-based worldbook entries
+- **Avatar & Portrait Management**: Upload, preview, and delete character avatars and portraits
 
 ### 📖 Chapter System
 - **Dynamic Chapters**: Create story chapters with custom backgrounds and music
@@ -34,19 +36,53 @@ An open-source Chrome extension for AI-driven character interactions, world-buil
 - **Chapter-Specific Media**: Each chapter can have unique background images and music
 
 ### 🎨 Immersive Experience
-- **Background Images**: World defaults + chapter-specific backgrounds
+- **Background Images**: World defaults + chapter-specific backgrounds with stretch-to-fill mode
 - **Background Music**: Atmospheric audio that changes with chapters
-- **Visual Effects**: Semi-transparent overlays for readability
+- **Visual Effects**: Enhanced transparency for better background visibility with blur effects
+- **Sound Effects**: Typewriter sound effects for authentic text appearance
+- **Character Portraits**: Display character portraits during conversations with download capability
 
 ### 🤖 AI Integration
 - **Google Gemini**: Free API via Google AI Studio (recommended)
 - **OpenAI Compatible**: Support for OpenAI and compatible APIs
-- **Image Generation**: Jimeng (Volcengine) API for character avatars and scene illustrations *(in development)*
+- **Image Generation**: Jimeng (Volcengine) API for character avatars and scene illustrations
+- **Multi-Language**: Built-in support for English, Chinese, and Thai
 
 ### 💾 Data Management
 - **Multiple Worlds**: Create and switch between different story worlds
-- **Import/Export**: Share worlds as JSON files
+- **Import/Export**: Complete world data export including characters, avatars, backgrounds, and chapters
+- **World Rename**: Easily rename existing worlds
 - **Local Storage**: All data stored locally in IndexedDB
+- **Example Worlds**: Pre-configured example worlds for quick start
+
+---
+
+## 📸 Screenshots
+
+### World Selection & Configuration
+![World Selector](docs/screenshots/plugin-window.png)
+*Create and manage multiple story worlds*
+
+![World Configuration](docs/screenshots/world-config1.png)
+*Configure world settings, backgrounds, and music*
+
+### Character Management
+![Character Creation](docs/screenshots/charactor-add.jpg)
+*Create and customize characters with avatars*
+
+### Chat Experience
+![Chat Interface - Spring World](docs/screenshots/chat1-Spring.jpg)
+*Immersive chat with background images and effects*
+
+![Chat Interface - CypherPink World](docs/screenshots/chat2-CyperPink.jpg)
+*Dynamic storytelling with chapter progression*
+
+### Full Application Views
+![Full Screen Chat](docs/screenshots/full-screen-chat.png)
+*Expanded chat view for full immersion*
+
+![Sidebar Navigation](docs/screenshots/left-bar.png)
+*Character and group management sidebar*
 
 ---
 
@@ -192,12 +228,22 @@ pnpm run preview # Preview build
 
 ## 🗺️ Roadmap
 
-### v0.1.3 (Current) ✅
+### v0.1.3 ✅
 - ✅ World default backgrounds and music
 - ✅ Chapter system with auto-progression
 - ✅ Character and group management
 - ✅ Worldbook entries
 - ✅ Image API configuration (Jimeng)
+
+### v0.1.4 (Current) ✅
+- ✅ Enhanced background image clarity (bg-cover stretching)
+- ✅ Avatar and portrait management with delete functionality
+- ✅ Improved UI transparency for better background visibility
+- ✅ Typewriter sound effects for authentic text appearance
+- ✅ World rename functionality
+- ✅ Multi-language support (English, Chinese, Thai)
+- ✅ Portrait download capability
+- ✅ Sidebar logo branding
 
 ### v0.2.0 (Next Release)
 - 🔄 AI image generation integration
