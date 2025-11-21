@@ -402,17 +402,20 @@ export function ChatInterface() {
               key={msg.timestamp + msg.content.substring(0, 5)} // Using timestamp + content snippet as key for now, ideally message ID
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div 
+              <div
                 className={`
                   max-w-[80%] rounded-2xl px-4 py-3 shadow-sm
-                  ${msg.role === 'user' 
-                    ? 'bg-purple-600 text-white rounded-tr-none' 
+                  ${msg.role === 'user'
+                    ? 'bg-purple-600 text-white rounded-tr-none'
                     : msg.characterName === 'System'
                     ? 'bg-gray-200 text-gray-600 text-center text-sm w-full'
                     : 'bg-white text-gray-800 rounded-tl-none'
                   }
                 `}
               >
+                {msg.characterName !== 'System' && msg.role !== 'user' && msg.characterName && (
+                  <div className="font-semibold text-purple-600 text-sm mb-1">{msg.characterName}</div>
+                )}
                 {msg.characterName !== 'System' && (
                   <div className="prose prose-sm max-w-none dark:prose-invert">
                     <ReactMarkdown>
@@ -424,6 +427,20 @@ export function ChatInterface() {
               </div>
             </div>
           ))}
+          {isLoading && (
+            <div className="flex justify-start">
+              <div className="max-w-[80%] rounded-2xl px-4 py-3 shadow-sm bg-white text-gray-800 rounded-tl-none">
+                <div className="flex items-center gap-2">
+                  <div className="flex gap-1">
+                    <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                  <span className="text-sm text-gray-500">正在思考...</span>
+                </div>
+              </div>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
