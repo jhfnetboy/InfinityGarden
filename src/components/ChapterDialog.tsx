@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { dbService, Chapter } from '../services/database';
 import { X, Upload } from 'lucide-react';
 
@@ -87,8 +88,8 @@ export function ChapterDialog({ isOpen, onClose, onSave, initialData }: ChapterD
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" onClick={onClose}>
       <div 
         className="bg-white rounded-xl w-[600px] max-h-[85vh] flex flex-col p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
@@ -247,6 +248,7 @@ export function ChapterDialog({ isOpen, onClose, onSave, initialData }: ChapterD
           Save Chapter
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

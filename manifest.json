@@ -17,5 +17,10 @@
       "js": ["src/content/content.tsx"],
       "matches": ["<all_urls>"]
     }
+  ],
+  "host_permissions": [
+    "https://ark.cn-beijing.volces.com/*",
+    "https://*.volces.com/*",
+    "https://*.volcengine.com/*"
   ]
 }

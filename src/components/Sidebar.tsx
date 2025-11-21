@@ -1,19 +1,18 @@
 import { useState, useEffect } from 'react';
 import { dbService, Character, Group, Worldbook } from '../services/database';
-import { Plus, Users, User, Settings, Maximize2, Edit2, Trash2, Book, ChevronDown } from 'lucide-react';
+import { Plus, Users, User, Maximize2, Edit2, Trash2, Book, ChevronDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { CharacterDialog } from './CharacterDialog';
 import { WorldbookDialog } from './WorldbookDialog';
-import { WorldbookPanel } from './WorldbookPanel';
 import { GroupDialog } from './GroupDialog';
 
 interface SidebarProps {
   onSelectChat: (id: number, type: 'private' | 'group') => void;
   currentChat: { id: number | null; type: 'private' | 'group' | '' };
-  onOpenSettings: () => void;
+  onGeneratePortrait?: (char: Character) => void;
 }
 
-export function Sidebar({ onSelectChat, currentChat, onOpenSettings }: SidebarProps) {
+export function Sidebar({ onSelectChat, currentChat, onGeneratePortrait }: SidebarProps) {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [worldbooks, setWorldbooks] = useState<Worldbook[]>([]);
@@ -30,8 +29,6 @@ export function Sidebar({ onSelectChat, currentChat, onOpenSettings }: SidebarPr
   
   const [isWorldbookDialogOpen, setIsWorldbookDialogOpen] = useState(false);
   const [editingWorldbook, setEditingWorldbook] = useState<Worldbook | undefined>(undefined);
-  
-  const [isWorldbookPanelOpen, setIsWorldbookPanelOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -256,25 +253,16 @@ export function Sidebar({ onSelectChat, currentChat, onOpenSettings }: SidebarPr
                 Worldbook ({worldbooks.length})
               </h3>
             </button>
-            <div className="flex gap-1">
-              <button 
-                onClick={() => setIsWorldbookPanelOpen(true)}
-                className="text-gray-400 hover:text-purple-600"
-                title="Worldbook Settings"
-              >
-                <Settings size={14} />
-              </button>
-              <button 
-                onClick={() => {
-                  setEditingWorldbook(undefined);
-                  setIsWorldbookDialogOpen(true);
-                }}
-                className="text-gray-400 hover:text-purple-600"
-                title="Add Entry"
-              >
-                <Plus size={14} />
-              </button>
-            </div>
+            <button
+              onClick={() => {
+                setEditingWorldbook(undefined);
+                setIsWorldbookDialogOpen(true);
+              }}
+              className="text-gray-400 hover:text-purple-600"
+              title="Add Entry"
+            >
+              <Plus size={14} />
+            </button>
           </div>
           {!isWorldbookCollapsed && (
             <div className="max-h-48 overflow-y-auto space-y-1">
@@ -327,28 +315,6 @@ export function Sidebar({ onSelectChat, currentChat, onOpenSettings }: SidebarPr
           <div className="flex justify-between items-center px-2 mb-2">
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Config</h3>
           </div>
-          <button 
-            onClick={() => {
-              const playerChar = characters.find(c => c.isPlayer);
-              setEditingChar(playerChar || { isPlayer: true } as Character);
-              setIsCharDialogOpen(true);
-            }}
-            className="w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-gray-200 text-gray-700 transition-colors mb-2"
-          >
-            <div className="w-8 h-8 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-700">
-              <User size={16} />
-            </div>
-            <span className="font-medium">Player Profile</span>
-          </button>
-          <button 
-            onClick={onOpenSettings}
-            className="w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-gray-200 text-gray-700 transition-colors"
-          >
-            <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-700">
-              <Settings size={16} />
-            </div>
-            <span className="font-medium">System Settings</span>
-          </button>
         </div>
       </div>
 
@@ -357,6 +323,10 @@ export function Sidebar({ onSelectChat, currentChat, onOpenSettings }: SidebarPr
         onClose={() => setIsCharDialogOpen(false)} 
         onSave={loadData}
         initialData={editingChar}
+        onGeneratePortrait={editingChar && onGeneratePortrait ? () => {
+          onGeneratePortrait(editingChar);
+          setIsCharDialogOpen(false);
+        } : undefined}
       />
       
       <GroupDialog
@@ -371,11 +341,6 @@ export function Sidebar({ onSelectChat, currentChat, onOpenSettings }: SidebarPr
         onClose={() => setIsWorldbookDialogOpen(false)}
         onSave={loadData}
         initialData={editingWorldbook}
-      />
-
-      <WorldbookPanel
-        isOpen={isWorldbookPanelOpen}
-        onClose={() => setIsWorldbookPanelOpen(false)}
       />
     </div>
   );

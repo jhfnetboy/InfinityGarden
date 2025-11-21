@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { dbService, Character } from '../services/database';
 import { X } from 'lucide-react';
 
@@ -9,9 +10,10 @@ interface CharacterDialogProps {
   onClose: () => void;
   onSave: () => void;
   initialData?: Character;
+  onGeneratePortrait?: () => void;
 }
 
-export function CharacterDialog({ isOpen, onClose, onSave, initialData }: CharacterDialogProps) {
+export function CharacterDialog({ isOpen, onClose, onSave, initialData, onGeneratePortrait }: CharacterDialogProps) {
   const [name, setName] = useState('');
   const [persona, setPersona] = useState('');
   const [greeting, setGreeting] = useState('');
@@ -61,14 +63,14 @@ export function CharacterDialog({ isOpen, onClose, onSave, initialData }: Charac
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
       <div 
         className="bg-white rounded-xl w-96 p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-bold text-gray-800">New Character</h2>
+          <h2 className="text-lg font-bold text-gray-800">{initialData ? 'Edit Character' : 'New Character'}</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
             <X size={20} />
           </button>
@@ -121,15 +123,32 @@ export function CharacterDialog({ isOpen, onClose, onSave, initialData }: Charac
               This is your character. NPCs will use the name you set above to address you in conversations.
             </p>
           )}
-          <button
-            onClick={handleSave}
-            disabled={!name || !persona}
-            className="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-medium disabled:opacity-50"
-          >
-            Create Character
-          </button>
+          
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            {onGeneratePortrait && initialData && (
+              <button
+                onClick={onGeneratePortrait}
+                type="button"
+                className="flex-1 bg-purple-100 text-purple-700 py-2 rounded-lg hover:bg-purple-200 font-medium flex items-center justify-center gap-2 transition-colors"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                Generate Portrait
+              </button>
+            )}
+            <button
+              onClick={handleSave}
+              disabled={!name || !persona}
+              className={`${
+                onGeneratePortrait && initialData ? 'flex-1' : 'w-full'
+              } bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 font-medium disabled:opacity-50`}
+            >
+              {initialData ? 'Save Character' : 'Create Character'}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

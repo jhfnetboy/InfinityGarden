@@ -197,6 +197,51 @@ Make the conversation feel natural - characters can agree, disagree, ask questio
       throw error;
     }
   }
+  async chat({
+    messages,
+    userMessage,
+    character,
+    worldContext
+  }: {
+    messages: Message[];
+    userMessage: string;
+    character: Character;
+    worldContext?: string;
+  }): Promise<string> {
+    // Get config
+    const { globalConfigService } = await import('./globalConfig');
+    const config = await globalConfigService.getConfig();
+
+    if (!config.apiKey) {
+      throw new Error('API Key not set. Please configure it in settings.');
+    }
+
+    // Construct prompt
+    // We adapt the existing constructPrompt to match this new signature
+    // Note: constructPrompt expects full history including the new user message if we want it to be part of the context
+    // But here we pass it separately. Let's append it for the prompt construction.
+    
+    // Create a temporary message object for the user input to pass to constructPrompt
+    const tempUserMsg: Message = {
+      role: 'user',
+      content: userMessage,
+      timestamp: Date.now(),
+      sessionId: 'temp',
+      characterId: null
+    };
+
+    const prompt = await this.constructPrompt(
+      [character], // participants
+      [...messages, tempUserMsg], // history
+      [], // worldbooks - we might want to fetch these if needed, but for now empty or passed via worldContext
+      null, // playerCharacter - assuming none for now or need to fetch
+      null, // targetCharacterName
+      false, // isGroup
+      worldContext // worldDescription
+    );
+
+    return this.getAIResponse(prompt, config);
+  }
 }
 
 export const aiService = new AIService();

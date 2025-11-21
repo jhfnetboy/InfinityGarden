@@ -11,6 +11,7 @@ export interface Character {
   isPlayer?: boolean;
   isPublic?: boolean;
   allowEdit?: boolean;
+  tachieUrl?: string;
 }
 
 export interface Group {
@@ -60,6 +61,14 @@ export interface Chapter {
     timeMinutes?: number;
     keywords?: string[];
   };
+}
+
+export interface WorldDefaults {
+  worldDescription?: string;
+  backgroundImage?: string;
+  backgroundMusic?: string;
+  defaultBgImage?: string;
+  defaultBgMusic?: string;
 }
 
 interface XGardenDB extends DBSchema {
@@ -314,20 +323,32 @@ export class DatabaseService {
     await this.db.put('config', description, 'worldDescription');
   }
 
-  async getWorldDefaults(): Promise<{ backgroundImage?: string; backgroundMusic?: string }> {
+  async getWorldDefaults(): Promise<WorldDefaults> {
     if (!this.db) return {};
+    const worldDescription = await this.db.get('config', 'worldDescription') as string | undefined;
     const backgroundImage = await this.db.get('config', 'worldDefaultBackground') as string | undefined;
     const backgroundMusic = await this.db.get('config', 'worldDefaultMusic') as string | undefined;
-    return { backgroundImage, backgroundMusic };
+    const defaultBgImage = await this.db.get('config', 'defaultBgImage') as string | undefined;
+    const defaultBgMusic = await this.db.get('config', 'defaultBgMusic') as string | undefined;
+    return { worldDescription, backgroundImage, backgroundMusic, defaultBgImage, defaultBgMusic };
   }
 
-  async saveWorldDefaults(defaults: { backgroundImage?: string; backgroundMusic?: string }): Promise<void> {
+  async saveWorldDefaults(defaults: WorldDefaults): Promise<void> {
     if (!this.db) return;
+    if (defaults.worldDescription !== undefined) {
+      await this.db.put('config', defaults.worldDescription, 'worldDescription');
+    }
     if (defaults.backgroundImage !== undefined) {
       await this.db.put('config', defaults.backgroundImage, 'worldDefaultBackground');
     }
     if (defaults.backgroundMusic !== undefined) {
       await this.db.put('config', defaults.backgroundMusic, 'worldDefaultMusic');
+    }
+    if (defaults.defaultBgImage !== undefined) {
+      await this.db.put('config', defaults.defaultBgImage, 'defaultBgImage');
+    }
+    if (defaults.defaultBgMusic !== undefined) {
+      await this.db.put('config', defaults.defaultBgMusic, 'defaultBgMusic');
     }
   }
 

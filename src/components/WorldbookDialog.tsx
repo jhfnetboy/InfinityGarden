@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { dbService, Worldbook } from '../services/database';
 import { X } from 'lucide-react';
 
@@ -39,8 +40,8 @@ export function WorldbookDialog({ isOpen, onClose, onSave, initialData }: Worldb
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]" onClick={onClose}>
       <div 
         className="bg-white rounded-xl w-96 p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
@@ -85,6 +86,7 @@ export function WorldbookDialog({ isOpen, onClose, onSave, initialData }: Worldb
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

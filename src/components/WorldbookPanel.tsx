@@ -27,20 +27,15 @@ export function WorldbookPanel({ isOpen, onClose }: WorldbookPanelProps) {
 
   useEffect(() => {
     if (isOpen) {
-      loadDescription();
       loadWorldDefaults();
       loadWorldbooks();
       loadChapters();
     }
   }, [isOpen]);
 
-  async function loadDescription() {
-    const desc = await dbService.getWorldDescription();
-    setWorldDescription(desc);
-  }
-
   async function loadWorldDefaults() {
     const defaults = await dbService.getWorldDefaults();
+    setWorldDescription(defaults.worldDescription || '');
     setWorldDefaultBg(defaults.backgroundImage || '');
     setWorldDefaultMusic(defaults.backgroundMusic || '');
   }
@@ -57,7 +52,11 @@ export function WorldbookPanel({ isOpen, onClose }: WorldbookPanelProps) {
   }
 
   async function handleSaveDescription() {
-    await dbService.saveWorldDescription(worldDescription);
+    await dbService.saveWorldDefaults({
+      worldDescription: worldDescription,
+      backgroundImage: worldDefaultBg,
+      backgroundMusic: worldDefaultMusic
+    });
   }
 
   async function handleSaveWorldDefaults() {
@@ -92,9 +91,9 @@ export function WorldbookPanel({ isOpen, onClose }: WorldbookPanelProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-end z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-end z-50 pointer-events-none">
       <div 
-        className="bg-white h-full w-[500px] shadow-2xl flex flex-col animate-slide-in-right"
+        className="bg-white h-full w-[500px] shadow-2xl flex flex-col animate-slide-in-right pointer-events-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
@@ -130,7 +129,7 @@ export function WorldbookPanel({ isOpen, onClose }: WorldbookPanelProps) {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-6 space-y-4 relative">
           {activeTab === 'entries' ? (
             <>
               {/* World Description */}
@@ -241,29 +240,31 @@ export function WorldbookPanel({ isOpen, onClose }: WorldbookPanelProps) {
                             </div>
                             <p className="text-xs text-gray-600 line-clamp-2">{wb.content}</p>
                           </div>
-                          <div className="flex gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={() => {
+                          <div className="flex gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setEditingWorldbook(wb);
                                 setIsWorldbookDialogOpen(true);
                               }}
-                              className="p-1 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded"
+                              className="p-1 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded cursor-pointer"
                               title="Edit"
                             >
                               <Edit2 size={14} />
-                            </button>
-                            <button
-                              onClick={async () => {
+                            </div>
+                            <div
+                              onClick={async (e) => {
+                                e.stopPropagation();
                                 if (confirm(`Delete entry "${wb.keywords}"?`)) {
                                   await dbService.deleteWorldbook(wb.id!);
                                   loadWorldbooks();
                                 }
                               }}
-                              className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
+                              className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded cursor-pointer"
                               title="Delete"
                             >
                               <Trash2 size={14} />
-                            </button>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -326,36 +327,41 @@ export function WorldbookPanel({ isOpen, onClose }: WorldbookPanelProps) {
                           </div>
                           <div className="flex gap-1 ml-2">
                             {!chapter.isActive && !chapter.isCompleted && (
-                              <button
-                                onClick={() => handleSetActive(chapter)}
-                                className="p-1 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded"
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSetActive(chapter);
+                                }}
+                                className="p-1 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded cursor-pointer"
                                 title="Set as Active"
                               >
                                 <Play size={14} />
-                              </button>
+                              </div>
                             )}
-                            <button
-                              onClick={() => {
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 setEditingChapter(chapter);
                                 setIsChapterDialogOpen(true);
                               }}
-                              className="p-1 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded"
+                              className="p-1 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded cursor-pointer"
                               title="Edit"
                             >
                               <Edit2 size={14} />
-                            </button>
-                            <button
-                              onClick={async () => {
+                            </div>
+                            <div
+                              onClick={async (e) => {
+                                e.stopPropagation();
                                 if (confirm(`Delete chapter "${chapter.title}"?`)) {
                                   await dbService.deleteChapter(chapter.id!);
                                   loadChapters();
                                 }
                               }}
-                              className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
+                              className="p-1 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded cursor-pointer"
                               title="Delete"
                             >
                               <Trash2 size={14} />
-                            </button>
+                            </div>
                           </div>
                         </div>
                       </div>

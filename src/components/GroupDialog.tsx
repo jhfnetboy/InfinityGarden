@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { dbService, Group, Character } from '../services/database';
 import { X } from 'lucide-react';
 
@@ -57,7 +58,7 @@ export function GroupDialog({ isOpen, onClose, onSave, initialData }: GroupDialo
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
       <div 
         className="bg-white rounded-xl w-96 max-h-[80vh] flex flex-col p-6 shadow-xl"
@@ -133,6 +134,7 @@ export function GroupDialog({ isOpen, onClose, onSave, initialData }: GroupDialo
           Save Group
         </button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

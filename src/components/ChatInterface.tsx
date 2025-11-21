@@ -1,507 +1,479 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { dbService, Message, Character, Chapter } from '../services/database';
-import { globalConfigService } from '../services/globalConfig';
+// import { useNavigate } from 'react-router-dom';
+import { Send, Menu, MoreVertical, Volume2, VolumeX, LogOut, Settings } from 'lucide-react';
 import { aiService } from '../services/ai';
-import { Sidebar } from './Sidebar';
-import { SettingsDialog } from './SettingsDialog';
+import { dbService as databaseService, Message, Character, Chapter, Group, WorldDefaults } from '../services/database';
 import ReactMarkdown from 'react-markdown';
-import { Send, ArrowLeft, MoreVertical, Volume2, VolumeX } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { CharacterGenerator } from './CharacterGenerator';
+import { WorldbookPanel } from './WorldbookPanel';
+import { WorldbookConfigDialog } from './WorldbookConfigDialog';
+import { Sidebar } from './Sidebar';
 
 export function ChatInterface() {
-  const navigate = useNavigate();
-  const [currentChat, setCurrentChat] = useState<{ id: number | null; type: 'private' | 'group' }>({ id: null, type: 'private' });
+  // const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  const [participants, setParticipants] = useState<Character[]>([]);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [characters, setCharacters] = useState<Character[]>([]);
+  const [activeCharacterId, setActiveCharacterId] = useState<number | null>(null);
+  const [activeGroupId, setActiveGroupId] = useState<number | null>(null);
+  const [activeGroup, setActiveGroup] = useState<Group | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeChapter, setActiveChapter] = useState<Chapter | null>(null);
-  const [worldDefaults, setWorldDefaults] = useState<{ backgroundImage?: string; backgroundMusic?: string }>({});
+  const [worldDefaults, setWorldDefaults] = useState<WorldDefaults>({});
   const [isMusicPlaying, setIsMusicPlaying] = useState(true);
+  
+  // Dialog States
+  const [isWorldbookOpen, setIsWorldbookOpen] = useState(false);
+  const [isWorldConfigOpen, setIsWorldConfigOpen] = useState(false);
+  
+  // Tachie State
+  const [tachieUrl, setTachieUrl] = useState<string | null>(null);
+  const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
+  const [selectedCharacterForPortrait, setSelectedCharacterForPortrait] = useState<Character | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    if (currentChat.id && currentChat.type) {
-      loadChatSession();
-    }
-  }, [currentChat]);
-
-  useEffect(() => {
-    const checkConfig = async () => {
-      const config = await globalConfigService.getConfig();
-      if (!config.apiKey) {
-        setIsSettingsOpen(true);
-      }
+    const init = async () => {
+      await loadCharacters();
+      await loadWorldDefaults();
+      await loadActiveChapter(); 
     };
-    checkConfig();
-  }, []); // This useEffect runs once on mount for config check
+    init();
+  }, []);
+
+  // Load messages when active character or group changes
+  useEffect(() => {
+    if (activeCharacterId) {
+      setActiveGroup(null);
+      loadMessages(activeCharacterId, 'private');
+    } else if (activeGroupId) {
+      loadActiveGroup(activeGroupId);
+      loadMessages(activeGroupId, 'group');
+    } else {
+      setMessages([]);
+      setActiveGroup(null);
+    }
+  }, [activeCharacterId, activeGroupId]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading]);
-
-  useEffect(() => {
-    loadActiveChapter();
-    loadWorldDefaults();
-  }, []);
+  }, [messages]);
 
   useEffect(() => {
     playBackgroundMusic();
-  }, [activeChapter, worldDefaults]);
+  }, [activeChapter, worldDefaults, isMusicPlaying]);
 
-  async function loadActiveChapter() {
-    const chapter = await dbService.getActiveChapter();
-    
-    if (chapter) {
-      setActiveChapter(chapter);
-      console.log('Loaded active chapter:', chapter);
-    } else {
-      // No active chapter - will use world defaults
-      console.log('No active chapter, will use world defaults');
-      setActiveChapter(null);
+  async function loadWorldDefaults() {
+    const defaults = await databaseService.getWorldDefaults();
+    if (defaults) {
+      setWorldDefaults(defaults);
     }
   }
 
-  async function loadWorldDefaults() {
-    const defaults = await dbService.getWorldDefaults();
-    console.log('Loaded world defaults:', defaults);
-    setWorldDefaults(defaults);
+  async function loadCharacters() {
+    const chars = await databaseService.getAllCharacters();
+    setCharacters(chars);
+    if (chars.length > 0 && !activeCharacterId && !activeGroupId) {
+      setActiveCharacterId(chars[0].id!);
+    }
   }
 
-  function getMusicUrl(musicId: string): string {
-    // Option 1: Use local files (requires adding MP3 files to public/assets/music/)
-    const localMusicMap: Record<string, string> = {
-      'peaceful-forest': chrome.runtime.getURL('assets/music/peaceful-forest.mp3'),
-      'calm-piano': chrome.runtime.getURL('assets/music/calm-piano.mp3'),
-      'ambient-space': chrome.runtime.getURL('assets/music/ambient-space.mp3'),
-      'medieval-lute': chrome.runtime.getURL('assets/music/medieval-lute.mp3'),
-      'gentle-rain': chrome.runtime.getURL('assets/music/gentle-rain.mp3')
-    };
+  async function loadActiveGroup(groupId: number) {
+    const groups = await databaseService.getAllGroups();
+    const group = groups.find(g => g.id === groupId);
+    setActiveGroup(group || null);
+  }
+
+  async function loadMessages(id: number, type: 'private' | 'group') {
+    const sessionId = type === 'private' ? `chat_${id}` : `group_${id}`;
+    const msgs = await databaseService.getChatHistory(sessionId);
+    setMessages(msgs);
     
-    // Option 2: Use online URLs (uncomment and replace with actual URLs)
-    // const onlineMusicMap: Record<string, string> = {
-    //   'peaceful-forest': 'https://example.com/peaceful-forest.mp3',
-    //   'calm-piano': 'https://example.com/calm-piano.mp3',
-    //   'ambient-space': 'https://example.com/ambient-space.mp3',
-    //   'medieval-lute': 'https://example.com/medieval-lute.mp3',
-    //   'gentle-rain': 'https://example.com/gentle-rain.mp3'
-    // };
-    // return onlineMusicMap[musicId] || '';
+    if (type === 'private') {
+      // Load tachie for this character
+      const char = characters.find(c => c.id === id);
+      if (char?.tachieUrl) {
+        setTachieUrl(char.tachieUrl);
+      } else {
+        setTachieUrl(null);
+      }
+    } else {
+      setTachieUrl(null);
+    }
+  }
+
+  async function loadActiveChapter() {
+    const active = await databaseService.getActiveChapter();
+    setActiveChapter(active || null);
+  }
+
+  function getMusicUrl() {
+    let musicName = null;
+    if (activeChapter?.backgroundMusic) {
+      musicName = activeChapter.backgroundMusic;
+    } else if (worldDefaults.backgroundMusic) {
+      musicName = worldDefaults.backgroundMusic;
+    }
     
-    return localMusicMap[musicId] || '';
+    if (!musicName) return null;
+    
+    // If it's already a full URL or data URI, return as-is
+    if (musicName.startsWith('http') || musicName.startsWith('data:')) {
+      return musicName;
+    }
+    
+    // Convert music name to asset path
+    return chrome.runtime.getURL(`assets/music/${musicName}.mp3`);
   }
 
   function playBackgroundMusic() {
     if (!audioRef.current) return;
 
-    // Priority: Active chapter music > World default music
-    const musicId = activeChapter?.backgroundMusic || worldDefaults.backgroundMusic;
-    
-    if (musicId && isMusicPlaying) {
-      const musicUrl = getMusicUrl(musicId);
-      
-      if (musicUrl && audioRef.current.src !== musicUrl) {
-        audioRef.current.src = musicUrl;
-        audioRef.current.loop = true;
-        audioRef.current.volume = 0.3; // 30% volume
-        
-        // Try to play, but don't log errors if files don't exist or autoplay is blocked
-        audioRef.current.play().catch(err => {
-          // Silently handle - music is optional
-          if (err.name !== 'NotSupportedError') {
-            console.log('Background music playback info:', err.name);
-          }
-        });
+    const musicUrl = getMusicUrl();
+
+    if (isMusicPlaying && musicUrl) {
+      const currentSrc = audioRef.current.src;
+      // Check if src needs update or if it's paused
+      if (!currentSrc.includes(encodeURI(musicUrl).replace(/%20/g, ' '))) {
+         audioRef.current.src = musicUrl;
+         audioRef.current.play().catch(e => {
+             console.warn("Music playback failed:", e);
+             // Don't auto-disable music on failure, might be interaction policy
+         });
+      } else if (audioRef.current.paused) {
+          audioRef.current.play().catch(() => {});
       }
     } else {
-      // No music configured or music paused, stop playback
       audioRef.current.pause();
     }
   }
 
   function toggleMusic() {
     setIsMusicPlaying(!isMusicPlaying);
-    if (!isMusicPlaying && audioRef.current) {
-      // Resume playing
-      audioRef.current.play().catch(() => {});
-    } else if (audioRef.current) {
-      // Pause
-      audioRef.current.pause();
-    }
   }
 
-  async function checkChapterProgression(lastMessage: Message) {
-    if (!activeChapter || activeChapter.isCompleted) {
-      console.log('Chapter progression check skipped:', { activeChapter, isCompleted: activeChapter?.isCompleted });
-      return;
-    }
-
-    // Skip check for pseudo default chapter
-    if (activeChapter.id === -1) {
-      console.log('Skipping progression check for default chapter');
-      return;
-    }
-
-    let shouldAdvance = false;
-
-    console.log('Checking chapter progression:', {
-      triggerType: activeChapter.triggerType,
-      triggerCondition: activeChapter.triggerCondition,
-      messageContent: lastMessage.content
-    });
-
-    // Check trigger conditions
-    if (activeChapter.triggerType === 'time') {
-      // Time-based: check dialogue count
-      const dialogueCount = activeChapter.triggerCondition?.dialogueCount || 10;
-      if (messages.length + 1 >= dialogueCount) {
-        shouldAdvance = true;
-        console.log('Time trigger activated:', { currentCount: messages.length + 1, required: dialogueCount });
-      }
-    } else if (activeChapter.triggerType === 'keyword') {
-      // Keyword-based: check if any keyword appears in the message
-      const keywords = activeChapter.triggerCondition?.keywords || [];
-      const messageText = lastMessage.content.toLowerCase();
-      console.log('Checking keywords:', { keywords, messageText });
-      
-      shouldAdvance = keywords.some(keyword => {
-        const found = messageText.includes(keyword.toLowerCase());
-        console.log(`Keyword "${keyword}" found:`, found);
-        return found;
-      });
-      
-      if (shouldAdvance) {
-        console.log('Keyword trigger activated!');
-      }
-    } else if (activeChapter.triggerType === 'ai-judgment') {
-      // AI-judgment: ask AI if chapter should advance
-      // For now, we'll implement a simple check - can be enhanced later
-      // This would require an additional AI call to determine if story has progressed enough
-      shouldAdvance = false; // TODO: Implement AI judgment
-    }
-
-    if (shouldAdvance) {
-      console.log('Advancing to next chapter...');
-      const nextChapter = await dbService.advanceToNextChapter();
-      if (nextChapter) {
-        setActiveChapter(nextChapter);
-        // Show notification to user
-        const notificationMsg: Message = {
-          role: 'char',
-          content: `📖 **章节推进**: ${nextChapter.title}\n\n${nextChapter.description}`,
-          timestamp: Date.now(),
-          sessionId: `${currentChat.type}_${currentChat.id}`,
-          characterName: '系统'
-        };
-        await dbService.saveMessage(notificationMsg);
-        setMessages(prev => [...prev, notificationMsg]);
-        console.log('Chapter advanced to:', nextChapter.title);
-      } else {
-        console.log('No next chapter available');
-      }
-    }
-  }
-
-  const scrollToBottom = () => {
+  function scrollToBottom() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  async function loadChatSession() {
-    if (!currentChat.id) return;
-    
-    const sessionId = `${currentChat.type}_${currentChat.id}`;
-    const history = await dbService.getChatHistory(sessionId);
-    setMessages(history);
-
-    // Load participants
-    if (currentChat.type === 'private') {
-      const char = await dbService.getAllCharacters().then(chars => chars.find(c => c.id === currentChat.id));
-      if (char) setParticipants([char]);
-    } else {
-      const group = await dbService.getAllGroups().then(groups => groups.find(g => g.id === currentChat.id));
-      if (group) {
-        const allChars = await dbService.getAllCharacters();
-        const groupChars = allChars.filter(c => group.characterIds.includes(c.id!));
-        setParticipants(groupChars);
-      }
-    }
   }
 
-  async function handleSendMessage() {
-    if (!input.trim() || !currentChat.id || isLoading) return;
+  async function handleSend() {
+    if (!input.trim() || (!activeCharacterId && !activeGroupId)) return;
 
-    const sessionId = `${currentChat.type}_${currentChat.id}`;
-    const allChars = await dbService.getAllCharacters();
-    const playerChar = allChars.find(c => c.isPlayer);
-    
-    // User message
-    const userMsg: Message = {
+    const sessionId = activeCharacterId ? `chat_${activeCharacterId}` : `group_${activeGroupId}`;
+    const userMessage: Message = {
       role: 'user',
       content: input,
       timestamp: Date.now(),
-      sessionId,
-      characterName: playerChar ? playerChar.name : 'User',
-      isSent: true
+      sessionId: sessionId,
+      characterId: null, // User
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    // Optimistic update
+    setMessages(prev => [...prev, userMessage]);
+    await databaseService.saveMessage(userMessage);
     setInput('');
     setIsLoading(true);
 
     try {
-      await dbService.saveMessage(userMsg);
+      let response: string;
+      let responderName: string;
+      let responderId: number | undefined;
 
-      // Get context
-      const worldbooks = await dbService.getAllWorldbooks();
-      const config = await globalConfigService.getConfig();
-      const worldDescription = await dbService.getWorldDescription();
+      if (activeCharacterId) {
+        const activeChar = characters.find(c => c.id === activeCharacterId);
+        if (!activeChar) throw new Error('Character not found');
+        responderName = activeChar.name;
+        responderId = activeChar.id;
 
-      if (!config.apiKey) {
-        const errorMsg: Message = {
-          role: 'char',
-          content: 'Error: API Key not set. Please configure it in settings.',
-          timestamp: Date.now(),
-          sessionId,
-          characterName: 'System'
-        };
-        setMessages(prev => [...prev, errorMsg]);
-        setIsLoading(false);
-        return;
+        const contextMessages = messages.slice(-10);
+        response = await aiService.chat({
+          messages: contextMessages,
+          userMessage: input,
+          character: activeChar,
+          worldContext: activeChapter?.description || ''
+        });
+      } else {
+        // Group chat logic
+        if (!activeGroup || activeGroup.characterIds.length === 0) throw new Error('Group empty');
+        
+        // Pick random character from group
+        const randomCharId = activeGroup.characterIds[Math.floor(Math.random() * activeGroup.characterIds.length)];
+        const activeChar = characters.find(c => c.id === randomCharId);
+        if (!activeChar) throw new Error('Character not found');
+        
+        responderName = activeChar.name;
+        responderId = activeChar.id;
+        
+        const contextMessages = messages.slice(-10);
+        response = await aiService.chat({
+          messages: contextMessages,
+          userMessage: input,
+          character: activeChar,
+          worldContext: activeChapter?.description || ''
+        });
       }
 
-      // Generate response
-      const prompt = await aiService.constructPrompt(
-        participants,
-        [...messages, userMsg],
-        worldbooks,
-        playerChar || null,
-        participants.length === 1 ? participants[0].name : null,
-        currentChat.type === 'group',
-        worldDescription
-      );
-
-      const responseText = await aiService.getAIResponse(prompt, config as any);
-      
-      // Parse response (simple parsing for now)
-      let charName = participants[0]?.name || 'AI';
-      let content = responseText;
-      
-      // If response starts with "Name: content", parse it
-      const match = responseText.match(/^([^:]+):\s*(.+)$/s);
-      if (match) {
-        charName = match[1].trim();
-        content = match[2].trim();
-      }
-
-      const aiMsg: Message = {
+      const aiMessage: Message = {
         role: 'char',
-        content: content,
+        content: response,
         timestamp: Date.now(),
-        sessionId,
-        characterName: charName,
-        characterId: participants.find(p => p.name === charName)?.id
+        sessionId: sessionId,
+        characterId: responderId,
+        characterName: responderName
       };
 
-      await dbService.saveMessage(aiMsg);
-      setMessages(prev => [...prev, aiMsg]);
+      setMessages(prev => [...prev, aiMessage]);
+      await databaseService.saveMessage(aiMessage);
       
-      // Check if chapter should progress
-      await checkChapterProgression(aiMsg);
+      await checkChapterTriggers(input);
+
     } catch (error) {
-      console.error('Failed to send message:', error);
-      const errorMsg: Message = {
+      console.error('Chat error:', error);
+      const errorMessage: Message = {
         role: 'char',
-        content: `Error: ${(error as Error).message}`,
+        content: 'Error: Failed to generate response. Please check your API key.',
         timestamp: Date.now(),
-        sessionId,
+        sessionId: sessionId,
         characterName: 'System'
       };
-      setMessages(prev => [...prev, errorMsg]);
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
   }
 
+  async function checkChapterTriggers(userInput: string) {
+    const chapters = await databaseService.getAllChapters();
+    const nextChapter = chapters.find((c: Chapter) => 
+      c.triggerType === 'keyword' && 
+      c.triggerCondition?.keywords?.some(k => userInput.includes(k)) &&
+      c.id !== activeChapter?.id
+    );
+
+    if (nextChapter) {
+      nextChapter.isActive = true;
+      await databaseService.saveChapter(nextChapter);
+      setActiveChapter(nextChapter);
+      
+      const sessionId = activeCharacterId ? `chat_${activeCharacterId}` : `group_${activeGroupId}`;
+      const systemMsg: Message = {
+        role: 'char',
+        content: `*** Chapter Started: ${nextChapter.title} ***\n${nextChapter.description}`,
+        timestamp: Date.now(),
+        sessionId: sessionId,
+        characterName: 'System'
+      };
+      setMessages(prev => [...prev, systemMsg]);
+      await databaseService.saveMessage(systemMsg);
+    }
+  }
+  
+  function handleExitWorld() {
+    if (confirm('Exit current world and return to world selection?')) {
+      // Clear current world state
+      databaseService.disconnect();
+      // Navigate back to world selector
+      window.location.href = chrome.runtime.getURL('index.html');
+    }
+  }
+  
+  function handleGeneratePortraitForChar(char: Character) {
+    setSelectedCharacterForPortrait(char);
+    setIsGeneratorOpen(true);
+  }
+
+  const activeCharacter = characters.find(c => c.id === activeCharacterId);
+  
+  const bgImage = activeChapter?.backgroundImage || 
+                  worldDefaults.backgroundImage || 
+                  chrome.runtime.getURL('assets/default-background.png');
+
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-100">
-      <Sidebar 
-        onSelectChat={(id, type) => setCurrentChat({ id, type })} 
-        currentChat={currentChat}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-      />
-
+    <div className="flex h-screen bg-gray-100 overflow-hidden relative">
+      {/* Background Image Layer */}
       <div 
-        className="flex-1 flex flex-col h-full min-h-0 relative"
-        style={{
-          backgroundImage: (() => {
-            const chapterBg = activeChapter?.backgroundImage;
-            const worldBg = worldDefaults.backgroundImage;
-            const defaultBg = chrome.runtime.getURL('assets/default-background.png');
-            const bgImage = chapterBg || worldBg || defaultBg;
-            return bgImage ? `url("${bgImage}")` : 'none';
-          })(),
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-1000"
+        style={{ 
+            backgroundImage: `url("${bgImage}")`,
         }}
-        ref={(el) => {
-          if (el) {
-            const bgImage = activeChapter?.backgroundImage || worldDefaults.backgroundImage;
-            if (bgImage) {
-              console.log('Background div rendered:', {
-                hasImage: !!bgImage,
-                styleBackgroundImage: el.style.backgroundImage,
-                computedBackgroundImage: window.getComputedStyle(el).backgroundImage
-              });
-            }
-          }
-        }}
-      >
-        {/* Background Music */}
-        <audio ref={audioRef} />
-        
-        {/* Debug: Log background image */}
-        {(() => {
-          const bgImage = activeChapter?.backgroundImage || worldDefaults.backgroundImage;
-          if (bgImage) {
-            console.log('Background image should be visible:', {
-              source: activeChapter?.backgroundImage ? 'chapter' : 'world default',
-              imageLength: bgImage.length,
-              imagePreview: bgImage.substring(0, 50) + '...'
-            });
-          }
-          return null;
-        })()}
-        
-        {/* Overlay for readability - reduced opacity to see background better */}
-        {(activeChapter?.backgroundImage || worldDefaults.backgroundImage) && (
-          <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px]"></div>
-        )}
+      />
+      
+      {/* Overlay for readability */}
+      <div className="absolute inset-0 bg-white/60 backdrop-blur-[2px]" />
 
-        {/* Content */}
-        <div className="relative flex-1 flex flex-col h-full min-h-0">
-        {/* Chat Header */}
-        <div className="h-14 border-b border-gray-200 flex items-center px-4 justify-between bg-white">
+      {/* Tachie (Character Portrait) Layer */}
+      {tachieUrl && (
+        <div className="absolute bottom-0 right-10 z-0 pointer-events-none transition-all duration-500 animate-in fade-in slide-in-from-bottom-10">
+          <img 
+            src={tachieUrl} 
+            alt="Character Portrait" 
+            className="max-h-[80vh] w-auto object-contain drop-shadow-2xl"
+          />
+        </div>
+      )}
+
+      {/* Audio Element for Background Music */}
+      <audio ref={audioRef} loop />
+
+      {/* Sidebar */}
+      <div className={`relative z-10 h-full transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-0'} overflow-hidden`}>
+        <Sidebar 
+          onSelectChat={(id, type) => {
+            if (type === 'private') {
+              setActiveCharacterId(id);
+              setActiveGroupId(null);
+            } else {
+              setActiveGroupId(id);
+              setActiveCharacterId(null);
+            }
+          }}
+          currentChat={{ 
+            id: activeCharacterId || activeGroupId, 
+            type: activeCharacterId ? 'private' : activeGroupId ? 'group' : '' 
+          }}
+          onGeneratePortrait={handleGeneratePortraitForChar}
+        />
+      </div>
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col relative z-10">
+        {/* Header */}
+        <div className="h-16 bg-white/80 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-4 shadow-sm">
           <div className="flex items-center gap-3">
-            {currentChat.id ? (
-              <>
-                <div className="font-semibold text-gray-800">
-                  {participants.map(p => p.name).join(', ')}
-                </div>
-              </>
-            ) : (
-              <div className="text-gray-500">Select a chat to begin</div>
-            )}
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Menu size={20} className="text-gray-600" />
+            </button>
+            <div>
+              <h1 className="font-bold text-gray-800">
+                {activeCharacter?.name || activeGroup?.name || 'Select a Character'}
+              </h1>
+              {activeChapter && (
+                <span className="text-xs text-purple-600 font-medium px-2 py-0.5 bg-purple-50 rounded-full border border-purple-100">
+                  {activeChapter.title}
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
-             <button 
-               onClick={toggleMusic}
-               className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
-               title={isMusicPlaying ? 'Pause music' : 'Play music'}
-             >
-               {isMusicPlaying ? <Volume2 size={20} /> : <VolumeX size={20} />}
-             </button>
-             <button onClick={() => { dbService.disconnect(); navigate('/'); }} className="p-2 hover:bg-gray-100 rounded-full text-gray-500">
-               <ArrowLeft size={20} />
-             </button>
-             <button className="p-2 hover:bg-gray-100 rounded-full text-gray-500">
-               <MoreVertical size={20} />
-             </button>
-          </div>
-        </div>
-
-        {/* Messages Area - transparent to show background */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {!currentChat.id ? (
-            <div className="h-full flex flex-col items-center justify-center text-gray-400">
-              <p>Select a character from the sidebar</p>
-              <p className="text-sm">or create a new one</p>
-            </div>
-          ) : (
-            <>
-              {messages.map((msg, idx) => (
-                <div
-                  key={idx}
-                  className={cn(
-                    "flex w-full",
-                    msg.role === 'user' ? "justify-end" : "justify-start"
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "max-w-[80%] rounded-2xl px-4 py-2 shadow-sm",
-                      msg.role === 'user'
-                        ? "bg-purple-600 text-white rounded-br-none"
-                        : "bg-white text-gray-800 border border-gray-100 rounded-bl-none"
-                    )}
-                  >
-                    {msg.role !== 'user' && (
-                      <div className="text-xs font-bold mb-1 opacity-70 text-purple-600">
-                        {msg.characterName}
-                      </div>
-                    )}
-                    <div className="prose prose-sm max-w-none dark:prose-invert">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
-                    </div>
-                    <div className="text-[10px] opacity-50 text-right mt-1">
-                      {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {isLoading && (
-                <div className="flex justify-start w-full">
-                  <div className="bg-white border border-gray-100 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm flex items-center gap-2">
-                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </>
-          )}
-        </div>
-
-        {/* Input Area */}
-        {/* Input Area - semi-transparent */}
-        <div className="p-6 bg-white/80 backdrop-blur-sm border-t border-gray-200">
-          <div className="flex gap-2 items-end bg-gray-50 p-3 rounded-2xl border border-gray-200 focus-within:border-purple-400 focus-within:ring-1 focus-within:ring-purple-400 transition-all shadow-sm">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              placeholder="Type a message..."
-              className="flex-1 bg-transparent border-none focus:ring-0 resize-none max-h-48 min-h-[72px] py-2 px-3 text-gray-800 text-base"
-              rows={3}
-              disabled={!currentChat.id || isLoading}
-            />
             <button
-              onClick={handleSendMessage}
-              disabled={!input.trim() || !currentChat.id || isLoading}
-              className="p-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors mb-1"
+              onClick={handleExitWorld}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Exit World"
             >
-              <Send size={20} />
+              <LogOut size={18} className="text-gray-600" />
+            </button>
+            <button
+              onClick={toggleMusic}
+              className={`p-2 rounded-lg transition-colors ${isMusicPlaying ? 'text-purple-600 hover:bg-purple-50' : 'text-gray-400 hover:bg-gray-100'}`}
+              title={isMusicPlaying ? "Pause Music" : "Play Music"}
+            >
+              {isMusicPlaying ? <Volume2 size={20} /> : <VolumeX size={20} />}
+            </button>
+            <button
+              onClick={() => setIsWorldConfigOpen(true)}
+              className="p-2 hover:bg-purple-50 rounded-lg transition-colors"
+              title="World Settings"
+            >
+              <Settings size={20} className="text-purple-600" />
+            </button>
+            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <MoreVertical size={20} className="text-gray-600" />
             </button>
           </div>
         </div>
-        {/* End of relative z-10 content */}
-      </div>
-      {/* End of background image container */}
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
+          {messages.map(msg => (
+            <div 
+              key={msg.timestamp + msg.content.substring(0, 5)} // Using timestamp + content snippet as key for now, ideally message ID
+              className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+            >
+              <div 
+                className={`
+                  max-w-[80%] rounded-2xl px-4 py-3 shadow-sm
+                  ${msg.role === 'user' 
+                    ? 'bg-purple-600 text-white rounded-tr-none' 
+                    : msg.characterName === 'System'
+                    ? 'bg-gray-200 text-gray-600 text-center text-sm w-full'
+                    : 'bg-white text-gray-800 rounded-tl-none'
+                  }
+                `}
+              >
+                {msg.characterName !== 'System' && (
+                  <div className="prose prose-sm max-w-none dark:prose-invert">
+                    <ReactMarkdown>
+                      {msg.content}
+                    </ReactMarkdown>
+                  </div>
+                )}
+                {msg.characterName === 'System' && msg.content}
+              </div>
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Input Area */}
+        <div className="p-4 bg-white/80 backdrop-blur-sm border-t border-gray-200">
+          <div className="flex gap-2 max-w-4xl mx-auto">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+              placeholder={activeCharacter ? `Message ${activeCharacter.name}...` : activeGroup ? `Message ${activeGroup.name}...` : "Select a character to start chatting"}
+              disabled={(!activeCharacter && !activeGroupId) || isLoading}
+              className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 disabled:bg-gray-50 disabled:text-gray-400"
+            />
+            <button
+              onClick={handleSend}
+              disabled={(!activeCharacter && !activeGroupId) || isLoading || !input.trim()}
+              className="bg-purple-600 text-white p-2 rounded-full hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Send size={20} />
+              )}
+            </button>
+          </div>
+        </div>
       </div>
 
-      <SettingsDialog 
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
+      {/* Character Generator Dialog */}
+      <CharacterGenerator
+        isOpen={isGeneratorOpen}
+        onClose={() => {
+          setIsGeneratorOpen(false);
+          setSelectedCharacterForPortrait(null);
+        }}
+        character={selectedCharacterForPortrait}
+        onImageGenerated={(url) => {
+          setTachieUrl(url);
+          // Update local character state to reflect the new URL immediately
+          setCharacters(prev => prev.map(c => 
+            c.id === selectedCharacterForPortrait?.id ? { ...c, tachieUrl: url } : c
+          ));
+          setSelectedCharacterForPortrait(null);
+        }}
+      />
+
+      {/* Worldbook Panel */}
+      <WorldbookPanel
+        isOpen={isWorldbookOpen}
+        onClose={() => setIsWorldbookOpen(false)}
+      />
+
+      <WorldbookConfigDialog
+        isOpen={isWorldConfigOpen}
+        onClose={() => setIsWorldConfigOpen(false)}
       />
     </div>
   );
