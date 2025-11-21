@@ -6,7 +6,7 @@
 
 An open-source Chrome extension for AI-driven character interactions, world-building, and immersive storytelling.
 
-[![Version](https://img.shields.io/badge/version-0.1.4-blue.svg)](https://github.com/jhfnetboy/InfinityGarden/releases)
+[![Version](https://img.shields.io/badge/version-0.1.4-blue.svg)](https://github.com/jhfnetboy/XGarden/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 [English](README.md) | [中文](README_CN.md)
@@ -92,8 +92,8 @@ An open-source Chrome extension for AI-driven character interactions, world-buil
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/jhfnetboy/InfinityGarden.git
-   cd InfinityGarden
+   git clone https://github.com/jhfnetboy/XGarden.git
+   cd XGarden
    ```
 
 2. **Install dependencies**
@@ -341,8 +341,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- **Issues**: [GitHub Issues](https://github.com/jhfnetboy/InfinityGarden/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/jhfnetboy/InfinityGarden/discussions)
+- **Issues**: [GitHub Issues](https://github.com/jhfnetboy/XGarden/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/jhfnetboy/XGarden/discussions)
 
 ---
 

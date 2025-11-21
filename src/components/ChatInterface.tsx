@@ -190,9 +190,10 @@ export function ChatInterface() {
     setIsLoading(true);
 
     try {
-      let response: string;
+      let response: string = '';
       let responderName: string;
       let responderId: number | undefined;
+      let aiMessageIndex: number;
 
       if (activeCharacterId) {
         const activeChar = characters.find(c => c.id === activeCharacterId);
@@ -200,36 +201,89 @@ export function ChatInterface() {
         responderName = activeChar.name;
         responderId = activeChar.id;
 
+        // Create placeholder message with empty content
+        const aiMessage: Message = {
+          role: 'char',
+          content: '',
+          timestamp: Date.now(),
+          sessionId: sessionId,
+          characterId: responderId,
+          characterName: responderName
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+        aiMessageIndex = messages.length + 1; // Index in the new messages array
+
         const contextMessages = messages.slice(-10);
-        response = await aiService.chat({
+        response = await aiService.chatStream({
           messages: contextMessages,
           userMessage: input,
           character: activeChar,
           worldContext: activeChapter?.description || '',
-          language: currentLanguage
+          language: currentLanguage,
+          onChunk: (chunk) => {
+            // Update message with streaming text
+            setMessages(prev => {
+              const updated = [...prev];
+              if (updated[aiMessageIndex]) {
+                updated[aiMessageIndex] = {
+                  ...updated[aiMessageIndex],
+                  content: chunk
+                };
+              }
+              return updated;
+            });
+          }
         });
       } else {
         // Group chat logic
         if (!activeGroup || activeGroup.characterIds.length === 0) throw new Error('Group empty');
-        
+
         // Pick random character from group
         const randomCharId = activeGroup.characterIds[Math.floor(Math.random() * activeGroup.characterIds.length)];
         const activeChar = characters.find(c => c.id === randomCharId);
         if (!activeChar) throw new Error('Character not found');
-        
+
         responderName = activeChar.name;
         responderId = activeChar.id;
-        
+
+        // Create placeholder message with empty content
+        const aiMessage: Message = {
+          role: 'char',
+          content: '',
+          timestamp: Date.now(),
+          sessionId: sessionId,
+          characterId: responderId,
+          characterName: responderName
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+        aiMessageIndex = messages.length + 1; // Index in the new messages array
+
         const contextMessages = messages.slice(-10);
-        response = await aiService.chat({
+        response = await aiService.chatStream({
           messages: contextMessages,
           userMessage: input,
           character: activeChar,
           worldContext: activeChapter?.description || '',
-          language: currentLanguage
+          language: currentLanguage,
+          onChunk: (chunk) => {
+            // Update message with streaming text
+            setMessages(prev => {
+              const updated = [...prev];
+              if (updated[aiMessageIndex]) {
+                updated[aiMessageIndex] = {
+                  ...updated[aiMessageIndex],
+                  content: chunk
+                };
+              }
+              return updated;
+            });
+          }
         });
       }
 
+      // Save the final complete message to database
       const aiMessage: Message = {
         role: 'char',
         content: response,
@@ -239,7 +293,6 @@ export function ChatInterface() {
         characterName: responderName
       };
 
-      setMessages(prev => [...prev, aiMessage]);
       await databaseService.saveMessage(aiMessage);
       
       await checkChapterTriggers(input);

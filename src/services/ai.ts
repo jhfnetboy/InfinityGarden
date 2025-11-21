@@ -223,7 +223,7 @@ Make the conversation feel natural - characters can agree, disagree, ask questio
     // We adapt the existing constructPrompt to match this new signature
     // Note: constructPrompt expects full history including the new user message if we want it to be part of the context
     // But here we pass it separately. Let's append it for the prompt construction.
-    
+
     // Create a temporary message object for the user input to pass to constructPrompt
     const tempUserMsg: Message = {
       role: 'user',
@@ -255,6 +255,75 @@ Make the conversation feel natural - characters can agree, disagree, ask questio
     }
 
     return this.getAIResponse(prompt, config);
+  }
+
+  // Stream chat response with character-by-character callback for typewriter effect
+  async chatStream({
+    messages,
+    userMessage,
+    character,
+    worldContext,
+    language = 'en',
+    onChunk
+  }: {
+    messages: Message[];
+    userMessage: string;
+    character: Character;
+    worldContext?: string;
+    language?: 'en' | 'zh' | 'th';
+    onChunk: (chunk: string) => void;
+  }): Promise<string> {
+    // Get config
+    const { globalConfigService } = await import('./globalConfig');
+    const config = await globalConfigService.getConfig();
+
+    if (!config.apiKey) {
+      throw new Error('API Key not set. Please configure it in settings.');
+    }
+
+    // Construct prompt
+    const tempUserMsg: Message = {
+      role: 'user',
+      content: userMessage,
+      timestamp: Date.now(),
+      sessionId: 'temp',
+      characterId: null
+    };
+
+    let prompt = await this.constructPrompt(
+      [character],
+      [...messages, tempUserMsg],
+      [],
+      null,
+      null,
+      false,
+      worldContext
+    );
+
+    // Add language instruction
+    const languageInstructions: Record<'en' | 'zh' | 'th', string> = {
+      en: '',
+      zh: '\n重要：所有回复必须使用中文。Please respond entirely in Chinese.',
+      th: '\n重要：所有回复必须使用泰文。Please respond entirely in Thai.'
+    };
+
+    if (language !== 'en') {
+      prompt += languageInstructions[language];
+    }
+
+    // Get full response first, then stream it character by character
+    const fullResponse = await this.getAIResponse(prompt, config);
+
+    // Stream response character by character with delay for typewriter effect
+    let accumulatedText = '';
+    for (const char of fullResponse) {
+      accumulatedText += char;
+      onChunk(accumulatedText);
+      // Add small delay between characters for typewriter effect
+      await new Promise(resolve => setTimeout(resolve, 20)); // 20ms per character
+    }
+
+    return fullResponse;
   }
 }
 

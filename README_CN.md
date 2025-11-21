@@ -6,7 +6,7 @@
 
 一个开源的 Chrome 扩展,用于 AI 驱动的角色互动、世界构建和沉浸式叙事。
 
-[![Version](https://img.shields.io/badge/version-0.1.3-blue.svg)](https://github.com/jhfnetboy/InfinityGarden/releases)
+[![Version](https://img.shields.io/badge/version-0.1.4-blue.svg)](https://github.com/jhfnetboy/XGarden/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 [English](README.md) | [中文](README_CN.md)
@@ -56,8 +56,8 @@
 
 1. **克隆仓库**
    ```bash
-   git clone https://github.com/jhfnetboy/InfinityGarden.git
-   cd InfinityGarden
+   git clone https://github.com/jhfnetboy/XGarden.git
+   cd XGarden
    ```
 
 2. **安装依赖**
@@ -295,8 +295,8 @@ pnpm run preview # 预览构建
 
 ## 📞 支持
 
-- **问题反馈**: [GitHub Issues](https://github.com/jhfnetboy/InfinityGarden/issues)
-- **讨论**: [GitHub Discussions](https://github.com/jhfnetboy/InfinityGarden/discussions)
+- **问题反馈**: [GitHub Issues](https://github.com/jhfnetboy/XGarden/issues)
+- **讨论**: [GitHub Discussions](https://github.com/jhfnetboy/XGarden/discussions)
 
 ---
 

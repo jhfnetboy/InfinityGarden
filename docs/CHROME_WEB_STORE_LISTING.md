@@ -76,7 +76,7 @@ Get started in minutes:
 3. Create your first world
 4. Start chatting with AI characters!
 
-Open Source: https://github.com/jhfnetboy/InfinityGarden
+Open Source: https://github.com/jhfnetboy/XGarden
 Documentation: Full setup guide included
 Community: Active development and support
 ```
@@ -217,11 +217,11 @@ We will notify users of any privacy policy changes through extension updates.
 
 ## Support Information
 
-**Website**: https://github.com/jhfnetboy/InfinityGarden
+**Website**: https://github.com/jhfnetboy/XGarden
 
 **Support Email**: [your-email@example.com]
 
-**Support URL**: https://github.com/jhfnetboy/InfinityGarden/issues
+**Support URL**: https://github.com/jhfnetboy/XGarden/issues
 
 ---
 
@@ -269,7 +269,7 @@ AI, storytelling, interactive fiction, worldbuilding, character creation, RPG, c
 
 **Developer Name**: XGarden Team
 
-**Developer Website**: https://github.com/jhfnetboy/InfinityGarden
+**Developer Website**: https://github.com/jhfnetboy/XGarden
 
 **Developer Email**: [your-email@example.com]
 

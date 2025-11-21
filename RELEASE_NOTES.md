@@ -82,4 +82,4 @@ Special thanks to:
 
 ---
 
-**Full Changelog**: https://github.com/jhfnetboy/InfinityGarden/compare/v0.1.2...v0.1.3
+**Full Changelog**: https://github.com/jhfnetboy/XGarden/compare/v0.1.2...v0.1.3
