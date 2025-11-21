@@ -333,14 +333,24 @@ export function ChatInterface() {
 
       {/* Sidebar */}
       <div className={`relative z-10 h-full transition-all duration-300 ${isSidebarOpen ? 'w-64' : 'w-0'} overflow-hidden`}>
-        <Sidebar 
+        <Sidebar
           onSelectChat={(id, type) => {
             if (type === 'private') {
               setActiveCharacterId(id);
               setActiveGroupId(null);
+              // Show character avatar if available
+              const char = characters.find(c => c.id === id);
+              if (char?.avatar) {
+                setTachieUrl(char.avatar);
+              } else if (char?.tachieUrl) {
+                setTachieUrl(char.tachieUrl);
+              } else {
+                setTachieUrl(null);
+              }
             } else {
               setActiveGroupId(id);
               setActiveCharacterId(null);
+              setTachieUrl(null);
             }
           }}
           currentChat={{ 

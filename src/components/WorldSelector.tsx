@@ -167,7 +167,7 @@ export function WorldSelector() {
       </div>
 
       <div className="w-full max-w-xs space-y-4">
-        <div className="space-y-2 max-h-[240px] overflow-y-auto pr-2">
+        <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2">
           {worlds.map(world => (
             <button
               key={world}
