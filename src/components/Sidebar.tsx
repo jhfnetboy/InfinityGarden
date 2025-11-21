@@ -50,8 +50,8 @@ export function Sidebar({ onSelectChat, currentChat, onGeneratePortrait }: Sideb
     <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
       {/* Header */}
       <div className="p-4 border-b border-gray-200 bg-white flex justify-between items-center">
-        <div>
-          <h2 className="font-bold text-gray-800 text-lg">XGarden</h2>
+        <div className="flex items-center gap-2">
+          <img src={chrome.runtime.getURL('assets/icon.png')} alt="XGarden" className="w-10 h-10" />
           <p className="text-xs text-gray-500">Connected to: {dbService['currentWorldName']}</p>
         </div>
         <button 

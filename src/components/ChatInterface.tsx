@@ -4,6 +4,7 @@ import { Send, Menu, MoreVertical, Volume2, VolumeX, LogOut, Settings } from 'lu
 import { aiService } from '../services/ai';
 import { dbService as databaseService, Message, Character, Chapter, Group, WorldDefaults } from '../services/database';
 import { i18nService, Language } from '../services/i18n';
+import { typewriterSound } from '../services/typewriter';
 import ReactMarkdown from 'react-markdown';
 import { CharacterGenerator } from './CharacterGenerator';
 import { WorldbookPanel } from './WorldbookPanel';
@@ -308,14 +309,14 @@ export function ChatInterface() {
     <div className="flex h-screen bg-gray-100 overflow-hidden relative">
       {/* Background Image Layer */}
       <div
-        className="absolute inset-0 bg-contain bg-center bg-no-repeat transition-all duration-1000"
+        className="absolute inset-0 bg-cover bg-center transition-all duration-1000"
         style={{
             backgroundImage: `url("${bgImage}")`,
         }}
       />
       
       {/* Overlay for readability */}
-      <div className="absolute inset-0 bg-white/30 backdrop-blur-[0.5px]" />
+      <div className="absolute inset-0 bg-white/15 backdrop-blur-[0.5px]" />
 
       {/* Tachie (Character Portrait) Layer */}
       {tachieUrl && (
@@ -455,7 +456,15 @@ export function ChatInterface() {
                   <div className="font-semibold text-purple-600 text-sm mb-1">{msg.characterName}</div>
                 )}
                 {msg.characterName !== 'System' && (
-                  <div className="prose prose-sm max-w-none dark:prose-invert">
+                  <div
+                    className="prose prose-sm max-w-none dark:prose-invert"
+                    onScroll={() => {
+                      // Play sound periodically as text is being displayed
+                      if (Math.random() < 0.1) {
+                        typewriterSound.playBeep();
+                      }
+                    }}
+                  >
                     <ReactMarkdown>
                       {msg.content}
                     </ReactMarkdown>
