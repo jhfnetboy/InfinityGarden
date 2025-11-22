@@ -2,6 +2,8 @@
 
 <div align="center">
 
+<img src="public/assets/icon.png" width="240" alt="XGarden Logo" align="center" />
+
 **🌸 Create Your Own Interactive Story Worlds 🌸**
 
 An open-source Chrome extension for AI-driven character interactions, world-building, and immersive storytelling.
