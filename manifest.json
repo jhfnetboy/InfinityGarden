@@ -21,6 +21,7 @@
   "host_permissions": [
     "https://ark.cn-beijing.volces.com/*",
     "https://*.volces.com/*",
-    "https://*.volcengine.com/*"
+    "https://*.volcengine.com/*",
+    "https://raw.githubusercontent.com/*"
   ]
 }

@@ -140,7 +140,19 @@ export function WorldSelector() {
 
   const handleLoadExample = async () => {
     try {
-      const response = await fetch(chrome.runtime.getURL('CypherPink.json'));
+      // 从 GitHub 下载示例世界文件
+      const githubUrl = 'https://raw.githubusercontent.com/jhfnetboy/XGarden/refs/heads/main/no-publish/CypherPink-2025-11-25.json';
+      
+      // 显示加载提示
+      const loadingMessage = 'Downloading example world from GitHub...';
+      console.log(loadingMessage);
+      
+      const response = await fetch(githubUrl);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to download: ${response.status} ${response.statusText}`);
+      }
+      
       const data = await response.json();
 
       const worldName = data.worldName || 'CypherPink';
@@ -154,7 +166,7 @@ export function WorldSelector() {
       }
     } catch (error) {
       console.error('Error loading example:', error);
-      alert('Error loading example: ' + (error as Error).message);
+      alert('Error loading example: ' + (error as Error).message + '\n\nPlease check your internet connection and try again.');
     }
   };
 
